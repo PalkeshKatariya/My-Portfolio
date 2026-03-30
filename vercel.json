@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/portfolio%20(1).html"
+      "destination": "/portfolio.html"
     },
     {
       "source": "/admin",
