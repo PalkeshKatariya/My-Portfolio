@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — PALKESH.KATARIYA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --navy:   #020b18;
+      --deep:   #050f1f;
+      --mid:    #091a2f;
+      --panel:  #0d2240;
+      --blue:   #1560bd;
+      --bright: #2d8bff;
+      --cyan:   #00d4ff;
+      --text:   #e8f4ff;
+      --muted:  #6a9cc7;
+      --border: rgba(45,139,255,.18);
+      --danger: #ff4d6d;
+      --success:#00e5a0;
+      --warn:   #fbbf24;
+    }
+
+    [data-theme="light"] {
+      --navy:   #f0f5fb;
+      --deep:   #e4ecf5;
+      --mid:    #d8e5f2;
+      --panel:  #ffffff;
+      --blue:   #1560bd;
+      --bright: #1a72e8;
+      --cyan:   #0088bb;
+      --text:   #08172e;
+      --muted:  #3a5a80;
+      --border: rgba(21,96,189,.2);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--navy);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      cursor: none;
+      overflow-x: hidden;
+      transition: background .4s, color .4s;
+    }
+
+    /* ── GRAIN ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 9990; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: .028;
+    }
+
+    /* ── CURSOR ── */
+    #cursor {
+      position: fixed; z-index: 9999; pointer-events: none;
+      width: 10px; height: 10px;
+      background: var(--danger); border-radius: 50%;
+      transform: translate(-50%,-50%);
+      transition: width .2s, height .2s, background .2s;
+      /* mix-blend-mode: screen; */
+    }
+    #cursor-ring {
+      position: fixed; z-index: 9998; pointer-events: none;
+      width: 34px; height: 34px;
+      border: 1.5px solid var(--text); border-radius: 50%;
+      transform: translate(-50%,-50%);
+      transition: width .22s, height .22s, border-color .2s, left .1s ease, top .1s ease;
+      /* mix-blend-mode: screen; */
+    }
+    body:has(button:hover) #cursor,
+    body:has(a:hover) #cursor { width: 5px; height: 5px; }
+    body:has(button:hover) #cursor-ring,
+    body:has(a:hover) #cursor-ring { width: 50px; height: 50px; border-color: var(--cyan); }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--navy); }
+    ::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 2px; }
+
+    /* ── LAYOUT ── */
+    .app { display: flex; min-height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 260px; flex-shrink: 0;
+      background: var(--deep);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; bottom: 0;
+      z-index: 100;
+      transition: background .4s, border-color .4s;
+    }
+    .sidebar-logo {
+      padding: 32px 28px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-text {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.7rem; letter-spacing: .12em;
+      color: var(--text); text-decoration: none;
+      display: block;
+    }
+    .logo-text span { color: var(--cyan); }
+    .logo-sub {
+      font-family: 'Space Mono', monospace;
+      font-size: .55rem; letter-spacing: .28em;
+      color: var(--muted); text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .sidebar-nav { flex: 1; padding: 24px 16px; overflow-y: auto; }
+    .nav-section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: .52rem; letter-spacing: .28em;
+      color: var(--muted); text-transform: uppercase;
+      padding: 0 12px; margin-bottom: 8px; margin-top: 20px;
+    }
+    .nav-section-label:first-child { margin-top: 0; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; border-radius: 4px;
+      color: var(--muted); text-decoration: none;
+      font-family: 'Space Mono', monospace;
+      font-size: .7rem; letter-spacing: .08em;
+      cursor: pointer; border: 1px solid transparent;
+      background: none; width: 100%; text-align: left;
+      transition: color .25s, background .25s, border-color .25s;
+      margin-bottom: 2px;
+    }
+    .nav-item:hover { color: var(--text); background: rgba(45,139,255,.07); }
+    .nav-item.active {
+      color: var(--cyan); background: rgba(0,212,255,.07);
+      border-color: rgba(0,212,255,.2);
+    }
+    .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--cyan); color: var(--navy);
+      font-size: .5rem; font-weight: 700;
+      padding: 1px 6px; border-radius: 10px;
+      font-family: 'Space Mono', monospace;
+    }
+
+    .sidebar-footer {
+      padding: 20px 16px;
+      border-top: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .sidebar-user {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 4px;
+      background: rgba(45,139,255,.05);
+      border: 1px solid var(--border);
+    }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Bebas Neue', sans-serif; font-size: .9rem;
+      color: var(--navy); flex-shrink: 0;
+    }
+    .user-name { font-family: 'Space Mono', monospace; font-size: .65rem; color: var(--text); }
+    .user-role { font-family: 'Space Mono', monospace; font-size: .52rem; color: var(--muted); letter-spacing: .08em; }
+
+    /* ── MAIN ── */
+    .main { margin-left: 260px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(2,11,24,.92);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background .4s;
+    }
+    [data-theme="light"] .topbar { background: rgba(240,245,251,.92); }
+
+    .topbar-left { display: flex; flex-direction: column; }
+    .topbar-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem; letter-spacing: .06em; line-height: 1;
+    }
+    .topbar-breadcrumb {
+      font-family: 'Space Mono', monospace;
+      font-size: .58rem; letter-spacing: .18em;
+      color: var(--muted); text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .topbar-breadcrumb span { color: var(--cyan); }
+
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+    .theme-toggle, .icon-btn {
+      background: rgba(45,139,255,.08);
+      border: 1px solid var(--border);
+      color: var(--muted); width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: color .25s, border-color .25s, background .25s, transform .2s;
+    }
+    .theme-toggle:hover, .icon-btn:hover { color: var(--cyan); border-color: var(--cyan); transform: rotate(15deg); }
+    .theme-toggle svg, .icon-btn svg { width: 15px; height: 15px; }
+    .icon-btn:hover { transform: scale(1.1); }
+    .theme-toggle .icon-moon { display: block; }
+    .theme-toggle .icon-sun  { display: none; }
+    [data-theme="light"] .theme-toggle .icon-moon { display: none; }
+    [data-theme="light"] .theme-toggle .icon-sun  { display: block; }
+
+    /* ── CONTENT ── */
+    .content { padding: 40px; flex: 1; }
+
+    /* ── PANELS (tabs) ── */
+    .panel {
+      display: none;
+      opacity: 0;
+      transform: translateY(14px) scale(.99);
+    }
+    .panel.active {
+      display: block;
+      animation: panelIn .38s cubic-bezier(.2,.8,.2,1) forwards;
+    }
+    .panel.leaving {
+      display: block;
+      animation: panelOut .2s ease forwards;
+    }
+
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(14px) scale(.99); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes panelOut {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to   { opacity: 0; transform: translateY(-6px) scale(.995); }
+    }
+
+    #topbarTitle, #topbarBreadcrumb {
+      transition: opacity .2s ease, transform .2s ease;
+      will-change: opacity, transform;
+    }
+    .header-switch #topbarTitle,
+    .header-switch #topbarBreadcrumb {
+      opacity: .45;
+      transform: translateY(-4px);
+    }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-bottom: 36px;
+    }
+    .stat-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 4px; padding: 24px 22px;
+      position: relative; overflow: hidden;
+      transition: border-color .4s, background .4s;
+    }
+    .stat-card::after {
+      content: ''; position: absolute; bottom: 0; left: 0;
+      width: 100%; height: 2px;
+      background: linear-gradient(90deg, var(--blue), var(--cyan));
+      transform: scaleX(0); transform-origin: left;
+      transition: transform .5s cubic-bezier(.4,0,.2,1);
+    }
+    .stat-card:hover::after { transform: scaleX(1); }
+    .stat-card:hover { border-color: rgba(45,139,255,.35); }
+    .stat-label {
+      font-family: 'Space Mono', monospace;
+      font-size: .58rem; letter-spacing: .22em;
+      color: var(--muted); text-transform: uppercase; margin-bottom: 10px;
+    }
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.6rem; line-height: 1; color: var(--bright);
+    }
+    .stat-sub { font-size: .75rem; color: var(--muted); margin-top: 6px; }
+    .stat-icon {
+      position: absolute; top: 20px; right: 20px;
+      opacity: .12; font-size: 2.2rem;
+    }
+
+    /* ── SECTION HEADER ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .section-eyebrow {
+      font-family: 'Space Mono', monospace;
+      font-size: .6rem; letter-spacing: .25em;
+      color: var(--cyan); text-transform: uppercase;
+      display: flex; align-items: center; gap: .6rem;
+      margin-bottom: .4rem;
+    }
+    .section-eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--cyan); }
+    .section-heading {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.8rem; letter-spacing: .05em;
+    }
+
+    /* ── BTN ── */
+    .btn {
+      font-family: 'Space Mono', monospace;
+      font-size: .65rem; letter-spacing: .1em; text-transform: uppercase;
+      padding: 9px 20px; border-radius: 2px;
+      cursor: pointer; border: 1px solid transparent;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: transform .2s, box-shadow .3s, background .25s, border-color .25s, color .25s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn svg { width: 13px; height: 13px; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--blue), var(--bright));
+      color: #fff; box-shadow: 0 4px 18px rgba(45,139,255,.25);
+    }
+    .btn-primary:hover { box-shadow: 0 8px 28px rgba(45,139,255,.45); }
+
+    .btn-ghost {
+      background: none; border-color: var(--border); color: var(--muted);
+    }
+    .btn-ghost:hover { border-color: var(--bright); color: var(--bright); background: rgba(45,139,255,.07); }
+
+    .btn-danger {
+      background: none; border-color: rgba(255,77,109,.25); color: var(--danger);
+    }
+    .btn-danger:hover { background: rgba(255,77,109,.1); border-color: var(--danger); }
+
+    .btn-success {
+      background: none; border-color: rgba(0,229,160,.25); color: var(--success);
+    }
+    .btn-success:hover { background: rgba(0,229,160,.08); border-color: var(--success); }
+
+    /* ── FORM ── */
+    .form-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 4px; padding: 32px;
+      transition: background .4s, border-color .4s;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label {
+      font-family: 'Space Mono', monospace;
+      font-size: .58rem; letter-spacing: .18em;
+      color: var(--muted); text-transform: uppercase;
+    }
+    .form-input, .form-select, .form-textarea {
+      background: var(--mid); border: 1px solid var(--border);
+      color: var(--text); padding: 11px 14px;
+      font-family: 'DM Sans', sans-serif; font-size: .88rem;
+      border-radius: 2px; outline: none;
+      transition: border-color .3s, background .3s;
+    }
+    .form-input::placeholder, .form-textarea::placeholder { color: rgba(106,156,199,.45); }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--bright);
+      background: rgba(13,34,64,.8);
+    }
+    [data-theme="light"] .form-input:focus,
+    [data-theme="light"] .form-select:focus,
+    [data-theme="light"] .form-textarea:focus { background: #fff; }
+    .form-select option { background: var(--deep); color: var(--text); }
+    .form-textarea { resize: vertical; min-height: 90px; }
+    .form-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+    /* ── TABLE ── */
+    .table-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 4px; overflow: hidden;
+      transition: background .4s, border-color .4s;
+    }
+    .table-toolbar {
+      padding: 18px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+    }
+    .table-search {
+      background: var(--mid); border: 1px solid var(--border);
+      color: var(--text); padding: 8px 14px;
+      font-family: 'Space Mono', monospace; font-size: .65rem;
+      letter-spacing: .06em; border-radius: 2px; outline: none;
+      width: 220px;
+      transition: border-color .3s;
+    }
+    .table-search:focus { border-color: var(--bright); }
+    .table-search::placeholder { color: rgba(106,156,199,.4); }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead tr {
+      background: var(--deep);
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      font-family: 'Space Mono', monospace;
+      font-size: .55rem; letter-spacing: .22em;
+      color: var(--muted); text-transform: uppercase;
+      padding: 14px 20px; text-align: left;
+    }
+    td { padding: 16px 20px; border-bottom: 1px solid rgba(45,139,255,.07); font-size: .88rem; vertical-align: middle; }
+    tbody tr {
+      transition: background .25s;
+    }
+    tbody tr:hover { background: rgba(45,139,255,.04); }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .td-title { font-family: 'DM Sans', sans-serif; font-weight: 500; color: var(--text); }
+    .td-meta { font-family: 'Space Mono', monospace; font-size: .6rem; color: var(--muted); margin-top: 3px; }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: .52rem; letter-spacing: .12em; text-transform: uppercase;
+      padding: 3px 9px; border-radius: 2px;
+    }
+    .badge-wedding  { background: rgba(167,139,250,.12); color: #a78bfa; border: 1px solid rgba(167,139,250,.25); }
+    .badge-commercial { background: rgba(52,211,153,.12); color: #34d399; border: 1px solid rgba(52,211,153,.25); }
+    .badge-real-estate { background: rgba(251,191,36,.12); color: #fbbf24; border: 1px solid rgba(251,191,36,.25); }
+    .badge-music    { background: rgba(244,114,182,.12); color: #f472b6; border: 1px solid rgba(244,114,182,.25); }
+    .badge-events   { background: rgba(0,212,255,.12); color: var(--cyan); border: 1px solid rgba(0,212,255,.25); }
+
+    .badge-new      { background: rgba(0,229,160,.1); color: var(--success); border: 1px solid rgba(0,229,160,.25); }
+    .badge-read     { background: rgba(45,139,255,.1); color: var(--muted); border: 1px solid var(--border); }
+
+    /* ── INQUIRY CARDS ── */
+    .inquiry-grid { display: grid; gap: 14px; }
+    .inquiry-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 4px; padding: 24px;
+      display: grid; grid-template-columns: auto 1fr auto;
+      gap: 18px; align-items: start;
+      transition: border-color .35s, background .35s;
+      position: relative; overflow: hidden;
+    }
+    .inquiry-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px; background: linear-gradient(var(--cyan), var(--blue));
+      transform: scaleY(0); transform-origin: top;
+      transition: transform .4s cubic-bezier(.4,0,.2,1);
+    }
+    .inquiry-card:hover::before { transform: scaleY(1); }
+    .inquiry-card:hover { border-color: rgba(45,139,255,.3); background: rgba(13,34,64,.6); }
+    .inquiry-card.is-new { border-color: rgba(0,229,160,.25); }
+    .inquiry-card.is-new::before { background: var(--success); }
+
+    .inq-avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem;
+      color: var(--navy); flex-shrink: 0;
+    }
+    .inq-name { font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 1rem; margin-bottom: 2px; }
+    .inq-email { font-family: 'Space Mono', monospace; font-size: .6rem; color: var(--muted); letter-spacing: .06em; }
+    .inq-body { margin-top: 10px; color: var(--muted); font-size: .87rem; line-height: 1.65; }
+    .inq-meta {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+    }
+    .inq-time { font-family: 'Space Mono', monospace; font-size: .55rem; color: var(--muted); letter-spacing: .08em; white-space: nowrap; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center; padding: 60px 20px;
+      font-family: 'Space Mono', monospace;
+      font-size: .7rem; letter-spacing: .12em;
+      color: var(--muted); text-transform: uppercase;
+    }
+    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 14px; opacity: .3; }
+
+    /* ── LOGIN SCREEN ── */
+    .login-screen {
+      min-height: 100vh; display: flex;
+      align-items: center; justify-content: center;
+      position: relative;
+    }
+    .login-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 60% 40%, #0a2244 0%, var(--navy) 70%);
+    }
+    .login-grid {
+      position: absolute; inset: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(45,139,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45,139,255,.04) 1px, transparent 1px);
+      background-size: 80px 80px;
+      animation: gridMove 24s linear infinite;
+    }
+    @keyframes gridMove { 0%{background-position:0 0;} 100%{background-position:80px 80px;} }
+
+    .login-orb {
+      position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none;
+      animation: orbFloat 10s ease-in-out infinite;
+    }
+    .login-orb-1 { width: 400px; height: 400px; background: rgba(21,96,189,.22); top: -5%; right: 10%; }
+    .login-orb-2 { width: 300px; height: 300px; background: rgba(0,212,255,.08); bottom: 10%; left: 5%; animation-delay: -5s; }
+    @keyframes orbFloat { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-25px);} }
+
+    .login-box {
+      position: relative; z-index: 2;
+      width: 100%; max-width: 420px;
+      background: var(--panel); border: 1px solid var(--border);
+      padding: 48px 40px;
+      animation: fadeUp .7s .2s both;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px);} to{opacity:1;transform:translateY(0);} }
+
+    .login-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem; letter-spacing: .12em;
+      margin-bottom: 4px;
+    }
+    .login-logo span { color: var(--cyan); }
+    .login-tagline {
+      font-family: 'Space Mono', monospace;
+      font-size: .58rem; letter-spacing: .25em;
+      color: var(--muted); text-transform: uppercase;
+      margin-bottom: 36px;
+    }
+    .login-label {
+      font-family: 'Space Mono', monospace;
+      font-size: .58rem; letter-spacing: .18em;
+      color: var(--muted); text-transform: uppercase;
+      display: block; margin-bottom: 6px;
+    }
+    .login-input {
+      width: 100%; background: var(--mid); border: 1px solid var(--border);
+      color: var(--text); padding: 13px 16px;
+      font-family: 'DM Sans', sans-serif; font-size: .9rem;
+      border-radius: 2px; outline: none; margin-bottom: 16px;
+      transition: border-color .3s;
+    }
+    .login-input:focus { border-color: var(--bright); }
+    .login-input::placeholder { color: rgba(106,156,199,.4); }
+    .login-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--blue), var(--bright));
+      color: #fff; border: none; padding: 14px;
+      font-family: 'Space Mono', monospace; font-size: .72rem;
+      letter-spacing: .14em; text-transform: uppercase;
+      cursor: pointer; border-radius: 2px; margin-top: 8px;
+      box-shadow: 0 4px 22px rgba(45,139,255,.3);
+      transition: transform .2s, box-shadow .3s;
+    }
+    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(45,139,255,.5); }
+    .login-error {
+      font-family: 'Space Mono', monospace; font-size: .62rem;
+      color: var(--danger); letter-spacing: .08em;
+      margin-top: 10px; display: none;
+    }
+    .login-error.show { display: block; }
+
+    /* ── TOAST ── */
+    #toast-container {
+      position: fixed; bottom: 28px; right: 28px;
+      z-index: 10000; display: flex; flex-direction: column; gap: 10px;
+    }
+    .toast {
+      background: var(--panel); border: 1px solid var(--border);
+      padding: 12px 18px; border-radius: 4px;
+      font-family: 'Space Mono', monospace; font-size: .65rem;
+      letter-spacing: .08em; color: var(--text);
+      display: flex; align-items: center; gap: 10px;
+      animation: toastIn .35s ease; min-width: 240px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.3);
+    }
+    .toast.success { border-color: rgba(0,229,160,.3); }
+    .toast.success .toast-dot { background: var(--success); }
+    .toast.error   { border-color: rgba(255,77,109,.3); }
+    .toast.error   .toast-dot { background: var(--danger); }
+    .toast-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    @keyframes toastIn { from{opacity:0;transform:translateX(20px);} to{opacity:1;transform:translateX(0);} }
+
+    /* ── CONFIRM MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 9000;
+      background: rgba(2,11,24,.92); backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .3s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: var(--panel); border: 1px solid var(--border);
+      padding: 36px; width: 360px;
+      animation: fadeUp .3s ease;
+    }
+    .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: .05em; margin-bottom: 10px; }
+    .modal-body { color: var(--muted); font-size: .88rem; line-height: 1.65; margin-bottom: 28px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+    /* ── EDIT INLINE ── */
+    .edit-row { display: none; background: rgba(9,26,47,.8); }
+    .edit-row.open { display: table-row; }
+    .edit-row td { padding: 16px 20px; }
+    .edit-inline {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: end;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .sidebar { width: 220px; }
+      .main { margin-left: 220px; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .content { padding: 24px; }
+      .topbar { padding: 14px 24px; }
+    }
+    @media (max-width: 680px) {
+      .sidebar { transform: translateX(-100%); transition: transform .3s; }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .edit-inline { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <div class="modal-title">Confirm Delete</div>
+    <div class="modal-body" id="confirmBody">This action cannot be undone. Are you sure you want to remove this work item?</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ LOGIN SCREEN ══════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-screen">
+    <div class="login-bg"></div>
+    <div class="login-grid"></div>
+    <div class="login-orb login-orb-1"></div>
+    <div class="login-orb login-orb-2"></div>
+
+    <div class="login-box">
+      <div class="login-logo">PALKESH<span>.</span>KATARIYA</div>
+      <div class="login-tagline">Admin Dashboard</div>
+
+      <form id="loginForm">
+        <label class="login-label">Username</label>
+        <input type="text" id="username" class="login-input" placeholder="admin" autocomplete="username" required>
+        <label class="login-label">Password</label>
+        <input type="password" id="password" class="login-input" placeholder="••••••••" autocomplete="current-password" required>
+        <button type="submit" class="login-btn">Sign In →</button>
+        <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ ADMIN APP ══════════════════════════════ -->
+<div id="adminApp" style="display:none;">
+  <div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <a href="#" class="logo-text">PALKESH<span>.</span>KATARIYA</a>
+        <div class="logo-sub">Admin Console</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Overview</div>
+        <button class="nav-item active" data-panel="dashboard" onclick="switchPanel('dashboard', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </button>
+
+        <div class="nav-section-label">Content</div>
+        <button class="nav-item" data-panel="work" onclick="switchPanel('work', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          Work Items
+        </button>
+        <button class="nav-item" data-panel="inquiries" onclick="switchPanel('inquiries', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Inquiries
+          <span class="nav-badge" id="sidebarBadge" style="display:none">0</span>
+        </button>
+
+        <div class="nav-section-label">Account</div>
+        <button class="nav-item" onclick="handleLogout()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userNameDisplay">Admin</div>
+            <div class="user-role">Administrator</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+      <!-- TOPBAR -->
+      <div class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-title" id="topbarTitle">Dashboard</div>
+          <div class="topbar-breadcrumb">PALKESH.KATARIYA <span>/</span> <span id="topbarBreadcrumb">Overview</span></div>
+        </div>
+        <div class="topbar-right">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- CONTENT -->
+      <div class="content">
+
+        <!-- ── DASHBOARD PANEL ── -->
+        <div class="panel active" id="panel-dashboard">
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-label">Total Work</div>
+              <div class="stat-value" id="statWork">—</div>
+              <div class="stat-sub">Published items</div>
+              <div class="stat-icon">🎬</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Inquiries</div>
+              <div class="stat-value" id="statInq">—</div>
+              <div class="stat-sub">Client messages</div>
+              <div class="stat-icon">💬</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">New Leads</div>
+              <div class="stat-value" id="statNew">—</div>
+              <div class="stat-sub">Unread messages</div>
+              <div class="stat-icon">✨</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Categories</div>
+              <div class="stat-value" id="statCats">5</div>
+              <div class="stat-sub">Active genres</div>
+              <div class="stat-icon">🗂</div>
+            </div>
+          </div>
+
+          <!-- Recent Inquiries preview -->
+          <div class="section-header">
+            <div>
+              <div class="section-eyebrow">Latest</div>
+              <div class="section-heading">Recent Inquiries</div>
+            </div>
+            <button class="btn btn-ghost" onclick="switchPanel('inquiries', document.querySelector('[data-panel=inquiries]'))">
+              View All →
+            </button>
+          </div>
+          <div id="dashInquiries" class="inquiry-grid"></div>
+        </div>
+
+        <!-- ── WORK PANEL ── -->
+        <div class="panel" id="panel-work">
+          <!-- Add / Edit Form -->
+          <div class="section-header">
+            <div>
+              <div class="section-eyebrow">Content</div>
+              <div class="section-heading" id="workFormTitle">Add Work Item</div>
+            </div>
+          </div>
+
+          <div class="form-card" style="margin-bottom:32px;">
+            <form id="workForm">
+              <input type="hidden" id="editId">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Title *</label>
+                  <input type="text" id="title" class="form-input" placeholder="e.g. The Sharma Wedding Film" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Category *</label>
+                  <select id="category" class="form-select" required>
+                    <option value="">Select category…</option>
+                    <option value="wedding">Short films</option>
+                    <option value="commercial">Commercial</option>
+                    <option value="real-estate">Real Estate</option>
+                    <option value="music">Music Video</option>
+                    <option value="events">Events</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Year</label>
+                  <input type="number" id="year" class="form-input" placeholder="2025" min="2000" max="2099">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">All Work Order</label>
+                  <input type="number" id="allOrder" class="form-input" placeholder="1" min="0" step="1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Category Order</label>
+                  <input type="number" id="categoryOrder" class="form-input" placeholder="1" min="0" step="1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Video URL (YouTube / external)</label>
+                  <input type="url" id="videoUrl" class="form-input" placeholder="https://youtube.com/embed/...">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Or Upload Video File (local)</label>
+                  <input type="file" id="videoFile" class="form-input" accept="video/*">
+                  <small style="color:var(--muted,#888);font-size:.75rem;">MP4 / WebM / MOV &mdash; max 1 GB. Local upload overrides the URL above.</small>
+                </div>
+                <div class="form-group full">
+                  <label class="form-label">Image URL</label>
+                  <input type="url" id="imageUrl" class="form-input" placeholder="https://...">
+                </div>
+                <div class="form-group full">
+                  <label class="form-label">Or Upload Thumbnail (Local File)</label>
+                  <input type="file" id="thumbnailFile" class="form-input" accept="image/*">
+                </div>
+                <div class="form-group full">
+                  <label class="form-label">Description</label>
+                  <textarea id="description" class="form-textarea" placeholder="Brief description of the project…"></textarea>
+                </div>
+              </div>
+              <div class="form-footer">
+                <button type="button" class="btn btn-ghost" onclick="resetWorkForm()">Clear</button>
+                <button type="submit" class="btn btn-primary" id="workSubmitBtn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add Work Item
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Work Table -->
+          <div class="section-header">
+            <div>
+              <div class="section-eyebrow">Library</div>
+              <div class="section-heading">All Work Items</div>
+            </div>
+          </div>
+          <div class="table-card">
+            <div class="table-toolbar">
+              <input type="text" class="table-search" id="workSearch" placeholder="Search by title…" oninput="filterWorkTable()">
+              <span style="font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);" id="workCount"></span>
+            </div>
+            <table id="workTable">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Order</th>
+                  <th>Year</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="workTbody"></tbody>
+            </table>
+            <div id="workEmpty" class="empty-state" style="display:none;">
+              <div class="empty-icon">🎬</div>
+              No work items yet. Add your first project above.
+            </div>
+          </div>
+        </div>
+
+        <!-- ── INQUIRIES PANEL ── -->
+        <div class="panel" id="panel-inquiries">
+          <div class="section-header">
+            <div>
+              <div class="section-eyebrow">Client Messages</div>
+              <div class="section-heading">All Inquiries</div>
+            </div>
+            <input type="text" class="table-search" id="inqSearch" placeholder="Search inquiries…" oninput="filterInquiries()">
+          </div>
+          <div id="inquiriesList" class="inquiry-grid"></div>
+          <div id="inqEmpty" class="empty-state" style="display:none;">
+            <div class="empty-icon">💬</div>
+            No inquiries yet.
+          </div>
+        </div>
+
+      </div><!-- /content -->
+    </div><!-- /main -->
+  </div><!-- /app -->
+</div><!-- /adminApp -->
+
+<script>
+  const API_ROOT = (window.API_BASE_URL || '').replace(/\/+$/, '');
+  const API_BASE = API_ROOT ? `${API_ROOT}/api` : '/api';
+  let allWork = [];
+  let allInquiries = [];
+  let deleteTargetId = null;
+  let deleteType = 'work'; // 'work' or 'inquiry' for confirmation logic
+
+  // ── CURSOR ──
+  const cur = document.getElementById('cursor');
+  const ring = document.getElementById('cursor-ring');
+  document.addEventListener('mousemove', e => {
+    cur.style.left = e.clientX + 'px';
+    cur.style.top  = e.clientY + 'px';
+    setTimeout(() => {
+      ring.style.left = e.clientX + 'px';
+      ring.style.top  = e.clientY + 'px';
+    }, 80);
+  });
+
+  // ── THEME ──
+  const html = document.getElementById('htmlRoot');
+  const themeToggle = document.getElementById('themeToggle');
+  if (localStorage.getItem('theme') === 'light') html.setAttribute('data-theme','light');
+  themeToggle.addEventListener('click', () => {
+    const light = html.getAttribute('data-theme') === 'light';
+    light ? html.removeAttribute('data-theme') : html.setAttribute('data-theme','light');
+    localStorage.setItem('theme', light ? 'dark' : 'light');
+  });
+
+  // ── PANEL SWITCHING ──
+  function switchPanel(name, btn) {
+    const currentPanel = document.querySelector('.panel.active');
+    const targetPanel = document.getElementById('panel-' + name);
+    if (!targetPanel || currentPanel === targetPanel) return;
+
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    const topbar = document.querySelector('.topbar');
+    topbar.classList.add('header-switch');
+
+    if (currentPanel) {
+      currentPanel.classList.remove('active');
+      currentPanel.classList.add('leaving');
+      setTimeout(() => currentPanel.classList.remove('leaving'), 220);
+    }
+
+    targetPanel.classList.add('active');
+
+    const titles = { dashboard: 'Dashboard', work: 'Work Items', inquiries: 'Inquiries' };
+    const nextTitle = titles[name] || name;
+
+    setTimeout(() => {
+      document.getElementById('topbarTitle').textContent = nextTitle;
+      document.getElementById('topbarBreadcrumb').textContent = nextTitle;
+      topbar.classList.remove('header-switch');
+    }, 120);
+  }
+
+  // ── TOAST ──
+  function showToast(msg, type = 'success') {
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.innerHTML = `<span class="toast-dot"></span>${msg}`;
+    document.getElementById('toast-container').appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  // ── CONFIRM MODAL ──
+  function openConfirm(id, type = 'work') {
+    deleteTargetId = id;
+    deleteType = type;
+    const body = document.getElementById('confirmBody');
+    body.textContent = type === 'work'
+      ? 'This action cannot be undone. Are you sure you want to remove this work item?'
+      : 'This action cannot be undone. Are you sure you want to delete this inquiry?';
+    document.getElementById('confirmModal').classList.add('open');
+  }
+  function closeConfirm() {
+    deleteTargetId = null;
+    document.getElementById('confirmModal').classList.remove('open');
+  }
+  document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+    if (deleteTargetId !== null) {
+      if (deleteType === 'work') {
+        await doDeleteWork(deleteTargetId);
+      } else if (deleteType === 'inquiry') {
+        await doDeleteInquiry(deleteTargetId);
+      }
+      closeConfirm();
+    }
+  });
+  document.getElementById('confirmModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('confirmModal')) closeConfirm();
+  });
+
+  // ── LOGIN ──
+  checkLoginStatus();
+
+  document.getElementById('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const errEl = document.getElementById('loginError');
+    errEl.classList.remove('show');
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      if (res.ok) {
+        showAdmin(username);
+      } else {
+        errEl.classList.add('show');
+      }
+    } catch {
+      errEl.textContent = 'Connection error. Check API server.';
+      errEl.classList.add('show');
+    }
+  });
+
+  async function checkLoginStatus() {
+    try {
+      const res = await fetch(`${API_BASE}/auth/status`);
+      const data = await res.json();
+      if (data.loggedIn) showAdmin(data.username || 'Admin');
+    } catch { /* not logged in */ }
+  }
+
+  function showAdmin(username) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminApp').style.display = '';
+    const name = username || 'Admin';
+    document.getElementById('userNameDisplay').textContent = name;
+    document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+    loadData();
+  }
+
+  async function handleLogout() {
+    try { await fetch(`${API_BASE}/auth/logout`, { method: 'POST' }); } catch {}
+    document.getElementById('adminApp').style.display = 'none';
+    document.getElementById('loginScreen').style.display = '';
+  }
+
+  // ── DATA ──
+  async function loadData() {
+    await Promise.all([loadWork(), loadInquiries()]);
+    updateStats();
+  }
+
+  async function loadWork() {
+    try {
+      const res = await fetch(`${API_BASE}/work`);
+      allWork = await res.json();
+    } catch { allWork = []; }
+    renderWorkTable();
+  }
+
+  async function loadInquiries() {
+    try {
+      const res = await fetch(`${API_BASE}/contact`);
+      allInquiries = await res.json();
+    } catch { allInquiries = []; }
+    renderInquiries();
+    renderDashInquiries();
+  }
+
+  function updateStats() {
+    document.getElementById('statWork').textContent = allWork.length;
+    document.getElementById('statInq').textContent = allInquiries.length;
+    const newCount = allInquiries.filter(i => !i.read).length;
+    document.getElementById('statNew').textContent = newCount;
+    const badge = document.getElementById('sidebarBadge');
+    if (newCount > 0) { badge.textContent = newCount; badge.style.display = ''; }
+    else { badge.style.display = 'none'; }
+  }
+
+  // ── WORK TABLE ──
+  function renderWorkTable(data) {
+    const items = data || allWork;
+    const tbody = document.getElementById('workTbody');
+    const empty = document.getElementById('workEmpty');
+    document.getElementById('workCount').textContent = items.length + ' item' + (items.length !== 1 ? 's' : '');
+    if (!items.length) {
+      tbody.innerHTML = '';
+      empty.style.display = '';
+      return;
+    }
+    empty.style.display = 'none';
+    tbody.innerHTML = items.map(item => `
+      <tr>
+        <td>
+          <div class="td-title">${escHtml(item.title)}</div>
+          <div class="td-meta">${escHtml(item.description || '').substring(0,60)}${item.description && item.description.length > 60 ? '…' : ''}</div>
+        </td>
+        <td><span class="badge badge-${item.category}">${item.category || '—'}</span></td>
+        <td>
+          <div style="font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);">
+            All: ${item.all_order ?? item.allOrder ?? '—'}
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);margin-top:4px;">
+            Cat: ${item.category_order ?? item.categoryOrder ?? '—'}
+          </div>
+        </td>
+        <td><span style="font-family:'Space Mono',monospace;font-size:.7rem;color:var(--muted);">${item.year || '—'}</span></td>
+        <td>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost" style="padding:6px 12px;font-size:.58rem;" onclick="startEditWork(${item.id})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:11px;height:11px;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit
+            </button>
+            <button class="btn btn-danger" style="padding:6px 12px;font-size:.58rem;" onclick="openConfirm(${item.id})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:11px;height:11px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              Delete
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function filterWorkTable() {
+    const q = document.getElementById('workSearch').value.toLowerCase();
+    const filtered = q ? allWork.filter(w => w.title.toLowerCase().includes(q)) : allWork;
+    renderWorkTable(filtered);
+  }
+
+  // ── WORK FORM ──
+  async function uploadVideoIfSelected() {
+    const input = document.getElementById('videoFile');
+    const file = input && input.files ? input.files[0] : null;
+    if (!file) return null;
+
+    const formData = new FormData();
+    formData.append('video', file);
+
+    const res = await fetch(`${API_BASE}/work/upload-video`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Video upload failed.');
+    }
+
+    const data = await res.json();
+    return data.videoUrl || null;
+  }
+
+  async function uploadThumbnailIfSelected() {
+    const input = document.getElementById('thumbnailFile');
+    const file = input && input.files ? input.files[0] : null;
+    if (!file) return null;
+
+    const formData = new FormData();
+    formData.append('thumbnail', file);
+
+    const res = await fetch(`${API_BASE}/work/upload-thumbnail`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Thumbnail upload failed.');
+    }
+
+    const data = await res.json();
+    return data.imageUrl || null;
+  }
+
+  document.getElementById('workForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = document.getElementById('editId').value;
+    const existingItem = id ? allWork.find(w => String(w.id) === String(id)) : null;
+
+    try {
+      const uploadedImageUrl = await uploadThumbnailIfSelected();
+      const uploadedVideoUrl = await uploadVideoIfSelected();
+
+      const titleValue = document.getElementById('title').value;
+      const categoryValue = document.getElementById('category').value;
+      const yearValue = document.getElementById('year').value;
+      const allOrderValue = document.getElementById('allOrder').value;
+      const categoryOrderValue = document.getElementById('categoryOrder').value;
+      const descriptionValue = document.getElementById('description').value;
+      const videoUrlValue = document.getElementById('videoUrl').value;
+      const imageUrlValue = document.getElementById('imageUrl').value;
+
+      const resolvedVideoUrl = uploadedVideoUrl
+        || videoUrlValue
+        || (existingItem ? (existingItem.videoUrl || existingItem.video_url || '') : '');
+
+      const resolvedImageUrl = uploadedImageUrl
+        || imageUrlValue
+        || (existingItem ? (existingItem.imageUrl || existingItem.image_url || '') : '');
+
+      const payload = {
+        title:         titleValue || (existingItem ? (existingItem.title || '') : ''),
+        category:      categoryValue || (existingItem ? (existingItem.category || '') : ''),
+        year:          yearValue !== '' ? yearValue : (existingItem ? (existingItem.year ?? '') : ''),
+        allOrder:      allOrderValue !== '' ? allOrderValue : (existingItem ? (existingItem.allOrder ?? existingItem.all_order ?? '') : ''),
+        categoryOrder: categoryOrderValue !== '' ? categoryOrderValue : (existingItem ? (existingItem.categoryOrder ?? existingItem.category_order ?? '') : ''),
+        description:   descriptionValue !== '' ? descriptionValue : (existingItem ? (existingItem.description || '') : ''),
+        videoUrl:      resolvedVideoUrl,
+        imageUrl:      resolvedImageUrl,
+      };
+
+      const url    = id ? `${API_BASE}/work/${id}` : `${API_BASE}/work`;
+      const method = id ? 'PUT' : 'POST';
+      const res    = await fetch(url, {
+        method,
+        credentials: 'include',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        showToast(id ? 'Work item updated.' : 'Work item added.', 'success');
+        await loadWork();
+
+        if (id) {
+          // Keep edit context active after save so existing values do not feel reset.
+          startEditWork(Number(id));
+        } else {
+          resetWorkForm();
+        }
+
+        updateStats();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        showToast(errData.error || 'Failed to save.', 'error');
+      }
+    } catch (err) {
+      showToast(err && err.message ? err.message : 'Connection error.', 'error');
+    }
+  });
+
+  function startEditWork(id) {
+    const item = allWork.find(w => w.id === id);
+    if (!item) return;
+    document.getElementById('editId').value        = item.id;
+    document.getElementById('title').value         = item.title || '';
+    document.getElementById('category').value      = item.category || '';
+    document.getElementById('year').value          = item.year || '';
+    document.getElementById('allOrder').value      = item.allOrder ?? item.all_order ?? '';
+    document.getElementById('categoryOrder').value = item.categoryOrder ?? item.category_order ?? '';
+    document.getElementById('description').value   = item.description || '';
+    document.getElementById('videoUrl').value      = item.videoUrl || item.video_url || '';
+    document.getElementById('imageUrl').value      = item.imageUrl || item.image_url || '';
+    document.getElementById('thumbnailFile').value = '';
+    document.getElementById('videoFile').value     = '';
+    document.getElementById('workFormTitle').textContent = 'Edit Work Item';
+    document.getElementById('workSubmitBtn').innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Save Changes`;
+    document.querySelector('[data-panel="work"]').click();
+    document.getElementById('title').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function resetWorkForm() {
+    document.getElementById('workForm').reset();
+    document.getElementById('editId').value = '';
+    document.getElementById('thumbnailFile').value = '';
+    document.getElementById('videoFile').value = '';
+    document.getElementById('workFormTitle').textContent = 'Add Work Item';
+    document.getElementById('workSubmitBtn').innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Work Item`;
+  }
+
+  async function doDeleteWork(id) {
+    try {
+      const res = await fetch(`${API_BASE}/work/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        showToast('Work item deleted.', 'success');
+        loadWork(); updateStats();
+      } else { showToast('Failed to delete.', 'error'); }
+    } catch { showToast('Connection error.', 'error'); }
+  }
+
+  async function doDeleteInquiry(id) {
+    try {
+      const res = await fetch(`${API_BASE}/contact/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        showToast('Inquiry deleted.', 'success');
+        loadInquiries(); updateStats();
+      } else { showToast('Failed to delete inquiry.', 'error'); }
+    } catch { showToast('Connection error.', 'error'); }
+  }
+
+  // ── INQUIRIES ──
+  function renderInquiries(data) {
+    const items = data || allInquiries;
+    const container = document.getElementById('inquiriesList');
+    const empty = document.getElementById('inqEmpty');
+    if (!items.length) { container.innerHTML = ''; empty.style.display = ''; return; }
+    empty.style.display = 'none';
+    container.innerHTML = items.map(i => renderInquiryCard(i)).join('');
+  }
+
+  function renderDashInquiries() {
+    const container = document.getElementById('dashInquiries');
+    const recent = allInquiries.slice(0, 3);
+    if (!recent.length) {
+      container.innerHTML = `<div class="empty-state"><div class="empty-icon">💬</div>No inquiries yet.</div>`;
+      return;
+    }
+    container.innerHTML = recent.map(i => renderInquiryCard(i)).join('');
+  }
+
+  function renderInquiryCard(i) {
+    const initials = (i.name || '?').split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2);
+    const isNew = !i.read;
+    const date = i.created_at ? new Date(i.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) : '';
+    return `
+      <div class="inquiry-card ${isNew ? 'is-new' : ''}">
+        <div class="inq-avatar">${initials}</div>
+        <div>
+          <div class="inq-name">${escHtml(i.name || '—')}</div>
+          <div class="inq-email">${escHtml(i.email || '')}</div>
+          <div class="inq-body">${escHtml(i.message || '')}</div>
+        </div>
+        <div class="inq-meta">
+          ${isNew ? '<span class="badge badge-new">New</span>' : '<span class="badge badge-read">Read</span>'}
+          ${i.service_type ? `<span class="badge badge-${i.service_type}">${escHtml(i.service_type)}</span>` : ''}
+          <div class="inq-time">${date}</div>
+          ${i.phone ? `<div class="inq-time">${escHtml(i.phone)}</div>` : ''}
+          <button class="btn btn-danger" style="margin-top:8px;font-size:.65rem;" onclick="openConfirm(${i.id}, 'inquiry')">
+            Delete
+          </button>
+        </div>
+      </div>`;
+  }
+
+  function filterInquiries() {
+    const q = document.getElementById('inqSearch').value.toLowerCase();
+    const filtered = q ? allInquiries.filter(i =>
+      (i.name||'').toLowerCase().includes(q) ||
+      (i.email||'').toLowerCase().includes(q) ||
+      (i.message||'').toLowerCase().includes(q)
+    ) : allInquiries;
+    renderInquiries(filtered);
+  }
+
+  // ── UTILS ──
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>

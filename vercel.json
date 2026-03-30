@@ -1,0 +1,17 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/portfolio%20(1).html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/public/admin.html"
+    },
+    {
+      "source": "/admin.html",
+      "destination": "/public/admin.html"
+    }
+  ]
+}
