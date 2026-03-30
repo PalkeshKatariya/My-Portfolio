@@ -1,0 +1,11 @@
+node_modules/
+server.js
+routes/
+database.js
+portfolio.db
+seed-work.js
+setup-admin.js
+export-clients.js
+change-password.js
+work/
+thumbs/

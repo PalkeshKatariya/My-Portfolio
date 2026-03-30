@@ -905,7 +905,8 @@
 
 <script>
   const API_ROOT = (window.API_BASE_URL || '').replace(/\/+$/, '');
-  const API_BASE = API_ROOT ? `${API_ROOT}/api` : '/api';
+  const IS_VERCEL_HOST = window.location.hostname.endsWith('.vercel.app');
+  const API_BASE = API_ROOT ? `${API_ROOT}/api` : (IS_VERCEL_HOST ? '' : '/api');
   let allWork = [];
   let allInquiries = [];
   let deleteTargetId = null;
@@ -1001,10 +1002,17 @@
   });
 
   // ── LOGIN ──
-  checkLoginStatus();
+  if (!API_BASE) {
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = 'Admin API is not configured. Set window.API_BASE_URL first.';
+    errEl.classList.add('show');
+  } else {
+    checkLoginStatus();
+  }
 
   document.getElementById('loginForm').addEventListener('submit', async e => {
     e.preventDefault();
+    if (!API_BASE) return;
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     const errEl = document.getElementById('loginError');
