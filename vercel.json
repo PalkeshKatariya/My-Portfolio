@@ -2,10 +2,6 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/",
-      "destination": "/portfolio.html"
-    },
-    {
       "source": "/admin",
       "destination": "/public/admin.html"
     },
