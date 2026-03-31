@@ -27,7 +27,7 @@ A complete backend system for Palkesh Katariya's videography portfolio website.
    ```
 
 3. Access the website at `http://localhost:3000`
-4. Admin panel at `http://localhost:3000/admin.html`
+4. Admin panel at `http://localhost:3000/admin` (also available at `/admin.html` in local Express mode)
 
 ## Default Admin Credentials
 
@@ -84,8 +84,8 @@ This project can be deployed on Vercel as a static frontend while keeping the AP
 
 1. Push this repository to GitHub.
 2. In Vercel, import the GitHub repo and deploy.
-3. The root URL `/` is routed to `portfolio (1).html` using `vercel.json`.
-4. Admin panel is available at `/admin` (rewritten to `public/admin.html`).
+3. Vercel serves `index.html` at the root URL `/`, and that file redirects to `portfolio (1).html`.
+4. Admin panel is available at `/admin` (and `/admin.html` is kept as a compatibility route).
 
 ### Configure Backend URL
 
