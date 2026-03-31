@@ -1,7 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "echo 'Static deployment'",
-  "outputDirectory": ".",
+  "public": true,
   "routes": [
     {
       "src": "/admin(?:\\.html)?",
