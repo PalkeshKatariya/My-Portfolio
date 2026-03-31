@@ -1,22 +1,14 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "**/*",
-      "use": "@vercel/static"
-    }
-  ],
+  "buildCommand": "echo 'Static deployment'",
+  "outputDirectory": ".",
   "routes": [
     {
-      "src": "/admin(\\.html)?",
+      "src": "/admin(?:\\.html)?",
       "dest": "/public/admin.html"
     },
     {
       "handle": "filesystem"
-    },
-      {
-      "src": "/.*",
-      "dest": "/index.html"
     }
   ]
 }
