@@ -1,4 +1,6 @@
 node_modules/
+package.json
+package-lock.json
 server.js
 routes/
 database.js
@@ -9,3 +11,5 @@ export-clients.js
 change-password.js
 work/
 thumbs/
+.git/
+.gitignore
