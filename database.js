@@ -1,4 +1,10 @@
-const initSqlJs = require('sql.js');
+let initSqlJs;
+try {
+  initSqlJs = require('sql.js');
+} catch (e) {
+  console.error('sql.js require failed:', e.message);
+  initSqlJs = null;
+}
 
 let db = null;
 let dbReady = null;
@@ -7,8 +13,15 @@ let dbReady = null;
 function initDatabase() {
   if (dbReady) return dbReady;
 
+  if (!initSqlJs) {
+    dbReady = Promise.reject(new Error('sql.js module not available'));
+    return dbReady;
+  }
+
   dbReady = (async () => {
-    const SQL = await initSqlJs();
+    const SQL = await initSqlJs({
+      locateFile: file => `https://sql.js.org/dist/${file}`
+    });
     db = new SQL.Database();
     console.log('Connected to in-memory SQLite database.');
 
