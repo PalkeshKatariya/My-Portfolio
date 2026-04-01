@@ -905,8 +905,7 @@
 
 <script>
   const API_ROOT = (window.API_BASE_URL || '').replace(/\/+$/, '');
-  const IS_VERCEL_HOST = window.location.hostname.endsWith('.vercel.app');
-  const API_BASE = API_ROOT ? `${API_ROOT}/api` : (IS_VERCEL_HOST ? '' : '/api');
+  const API_BASE = API_ROOT ? `${API_ROOT}/api` : '/api';
   let allWork = [];
   let allInquiries = [];
   let deleteTargetId = null;
