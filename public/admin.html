@@ -1055,6 +1055,8 @@
         showAdmin(data.username || username);
       } else {
         clearAuthToken();
+        const errData = await res.json().catch(() => ({}));
+        errEl.textContent = errData.error || `Login failed (HTTP ${res.status}).`;
         errEl.classList.add('show');
       }
     } catch {
