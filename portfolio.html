@@ -1422,24 +1422,58 @@
   const modalTitle = document.getElementById('modalTitle');
   const modalMeta  = document.getElementById('modalMeta');
 
-  function isLocalVideo(src) {
-    return src && (src.startsWith('/uploads/') || (src.startsWith('/') && !src.startsWith('//')));
+  function normalizeVideoSource(src) {
+    if (!src) return '';
+    const value = String(src).trim();
+    try {
+      const url = new URL(value, window.location.origin);
+      const host = (url.hostname || '').toLowerCase();
+      let videoId = '';
+
+      if (host === 'youtu.be') {
+        videoId = url.pathname.slice(1);
+      } else if (host.endsWith('youtube.com')) {
+        if (url.pathname === '/watch') {
+          videoId = url.searchParams.get('v') || '';
+        } else if (url.pathname.startsWith('/shorts/')) {
+          videoId = url.pathname.split('/')[2] || '';
+        } else if (url.pathname.startsWith('/embed/')) {
+          videoId = url.pathname.split('/')[2] || '';
+        }
+      }
+
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+      return value;
+    } catch {
+      return value;
+    }
+  }
+
+  function isDirectVideoSource(src) {
+    if (!src) return false;
+    return (
+      src.startsWith('data:video/') ||
+      src.startsWith('blob:') ||
+      src.startsWith('/uploads/') ||
+      /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(src)
+    );
   }
 
   function openModal(title, meta, src) {
+    const resolvedSrc = normalizeVideoSource(src);
     modalTitle.textContent = title;
     modalMeta.textContent  = meta;
-    if (isLocalVideo(src)) {
+    if (isDirectVideoSource(resolvedSrc)) {
       iframe.src             = '';
       iframe.style.display   = 'none';
-      videoEl.src            = src;
+      videoEl.src            = resolvedSrc;
       videoEl.style.display  = 'block';
     } else {
       videoEl.pause();
       videoEl.src            = '';
       videoEl.style.display  = 'none';
       iframe.style.display   = 'block';
-      iframe.src             = src;
+      iframe.src             = resolvedSrc;
     }
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
