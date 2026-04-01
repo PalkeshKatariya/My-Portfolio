@@ -7,6 +7,15 @@ const app = express();
 // ── Diagnostics ────────────────────────────────────────────
 const bootErrors = [];
 
+// ── Health endpoint FIRST (before any middleware that could crash) ──
+app.get('/api/health', (_req, res) => {
+  res.json({
+    ok: bootErrors.length === 0,
+    bootErrors,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // ── Middleware ──────────────────────────────────────────────
 app.use(cors());
 app.use(bodyParser.json());
@@ -51,19 +60,7 @@ try {
   console.error('routes/auth failed to load:', err.message);
 }
 
-// ── Health / diagnostic endpoint ───────────────────────────
-app.get('/api/health', (_req, res) => {
-  res.json({
-    ok: bootErrors.length === 0,
-    bootErrors,
-    env: {
-      NODE_ENV: process.env.NODE_ENV || '(not set)',
-      VERCEL: process.env.VERCEL || '(not set)',
-      VERCEL_REGION: process.env.VERCEL_REGION || '(not set)'
-    },
-    timestamp: new Date().toISOString()
-  });
-});
+
 
 // ── Global error handler ───────────────────────────────────
 app.use((err, _req, res, _next) => {

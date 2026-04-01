@@ -1,4 +1,4 @@
-const initSqlJs = require('sql.js/dist/sql-asm.js');
+const initSqlJs = require('sql.js');
 
 let db = null;
 let dbReady = null;
