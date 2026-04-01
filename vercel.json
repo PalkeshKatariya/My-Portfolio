@@ -1,6 +1,8 @@
 {
-  "routes": [
-    { "src": "/admin", "dest": "/admin.html" },
-    { "src": "/(.*)", "dest": "/$1" }
+  "rewrites": [
+    { "source": "/admin", "destination": "/public/admin.html" }
+  ],
+  "redirects": [
+    { "source": "/admin.html", "destination": "/admin", "permanent": false }
   ]
 }
