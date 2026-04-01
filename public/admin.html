@@ -906,10 +906,36 @@
 <script>
   const API_ROOT = (window.API_BASE_URL || '').replace(/\/+$/, '');
   const API_BASE = API_ROOT ? `${API_ROOT}/api` : '/api';
+  const AUTH_TOKEN_KEY = 'adminAuthToken';
   let allWork = [];
   let allInquiries = [];
   let deleteTargetId = null;
   let deleteType = 'work'; // 'work' or 'inquiry' for confirmation logic
+
+  function getAuthToken() {
+    return localStorage.getItem(AUTH_TOKEN_KEY) || '';
+  }
+
+  function setAuthToken(token) {
+    if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
+  }
+
+  function clearAuthToken() {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+  }
+
+  async function authFetch(url, options = {}) {
+    const token = getAuthToken();
+    const headers = new Headers(options.headers || {});
+    if (token && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    return fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include'
+    });
+  }
 
   // ── CURSOR ──
   const cur = document.getElementById('cursor');
@@ -1018,14 +1044,17 @@
     errEl.classList.remove('show');
 
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await authFetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
       if (res.ok) {
-        showAdmin(username);
+        const data = await res.json().catch(() => ({}));
+        if (data.token) setAuthToken(data.token);
+        showAdmin(data.username || username);
       } else {
+        clearAuthToken();
         errEl.classList.add('show');
       }
     } catch {
@@ -1036,7 +1065,7 @@
 
   async function checkLoginStatus() {
     try {
-      const res = await fetch(`${API_BASE}/auth/status`);
+      const res = await authFetch(`${API_BASE}/auth/status`);
       const data = await res.json();
       if (data.loggedIn) showAdmin(data.username || 'Admin');
     } catch { /* not logged in */ }
@@ -1052,7 +1081,8 @@
   }
 
   async function handleLogout() {
-    try { await fetch(`${API_BASE}/auth/logout`, { method: 'POST' }); } catch {}
+    try { await authFetch(`${API_BASE}/auth/logout`, { method: 'POST' }); } catch {}
+    clearAuthToken();
     document.getElementById('adminApp').style.display = 'none';
     document.getElementById('loginScreen').style.display = '';
   }
@@ -1065,7 +1095,7 @@
 
   async function loadWork() {
     try {
-      const res = await fetch(`${API_BASE}/work`);
+      const res = await authFetch(`${API_BASE}/work`);
       allWork = await res.json();
     } catch { allWork = []; }
     renderWorkTable();
@@ -1073,7 +1103,7 @@
 
   async function loadInquiries() {
     try {
-      const res = await fetch(`${API_BASE}/contact`);
+      const res = await authFetch(`${API_BASE}/contact`);
       allInquiries = await res.json();
     } catch { allInquiries = []; }
     renderInquiries();
@@ -1149,9 +1179,8 @@
     const formData = new FormData();
     formData.append('video', file);
 
-    const res = await fetch(`${API_BASE}/work/upload-video`, {
+    const res = await authFetch(`${API_BASE}/work/upload-video`, {
       method: 'POST',
-      credentials: 'include',
       body: formData
     });
 
@@ -1172,9 +1201,8 @@
     const formData = new FormData();
     formData.append('thumbnail', file);
 
-    const res = await fetch(`${API_BASE}/work/upload-thumbnail`, {
+    const res = await authFetch(`${API_BASE}/work/upload-thumbnail`, {
       method: 'POST',
-      credentials: 'include',
       body: formData
     });
 
@@ -1226,9 +1254,8 @@
 
       const url    = id ? `${API_BASE}/work/${id}` : `${API_BASE}/work`;
       const method = id ? 'PUT' : 'POST';
-      const res    = await fetch(url, {
+      const res    = await authFetch(url, {
         method,
-        credentials: 'include',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify(payload)
       });
@@ -1288,7 +1315,7 @@
 
   async function doDeleteWork(id) {
     try {
-      const res = await fetch(`${API_BASE}/work/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`${API_BASE}/work/${id}`, { method: 'DELETE' });
       if (res.ok) {
         showToast('Work item deleted.', 'success');
         loadWork(); updateStats();
@@ -1298,7 +1325,7 @@
 
   async function doDeleteInquiry(id) {
     try {
-      const res = await fetch(`${API_BASE}/contact/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`${API_BASE}/contact/${id}`, { method: 'DELETE' });
       if (res.ok) {
         showToast('Inquiry deleted.', 'success');
         loadInquiries(); updateStats();

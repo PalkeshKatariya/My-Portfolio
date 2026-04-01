@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database');
+const { requireAdmin } = require('./authMiddleware');
 
 // POST /api/contact - Submit contact form
 router.post('/', (req, res) => {
@@ -23,12 +24,7 @@ router.post('/', (req, res) => {
 });
 
 // GET /api/contact - Get all inquiries (admin only)
-router.get('/', (req, res) => {
-  // In a real app, add authentication check here
-  if (!req.session.admin) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+router.get('/', requireAdmin, (req, res) => {
   db.all('SELECT * FROM clients ORDER BY created_at DESC', [], (err, rows) => {
     if (err) {
       console.error('Error fetching clients:', err);
@@ -39,10 +35,7 @@ router.get('/', (req, res) => {
 });
 
 // DELETE /api/contact/:id - Remove a saved inquiry (admin only)
-router.delete('/:id', (req, res) => {
-  if (!req.session.admin) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+router.delete('/:id', requireAdmin, (req, res) => {
   const id = req.params.id;
   db.run('DELETE FROM clients WHERE id = ?', [id], function(err) {
     if (err) {

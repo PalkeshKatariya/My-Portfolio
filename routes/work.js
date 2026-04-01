@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const multer = require('multer');
+const { requireAdmin } = require('./authMiddleware');
 
 // Use memory storage for Vercel (read-only filesystem)
 const upload = multer({
@@ -40,11 +41,7 @@ router.get('/', (req, res) => {
 });
 
 // POST /api/work/upload-thumbnail - Upload thumbnail image (admin only)
-router.post('/upload-thumbnail', (req, res) => {
-  if (!req.session.admin) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+router.post('/upload-thumbnail', requireAdmin, (req, res) => {
   upload.single('thumbnail')(req, res, (err) => {
     if (err) {
       return res.status(400).json({ error: err.message || 'Upload failed.' });
@@ -65,11 +62,7 @@ router.post('/upload-thumbnail', (req, res) => {
 });
 
 // POST /api/work/upload-video - Upload local video file (admin only)
-router.post('/upload-video', (req, res) => {
-  if (!req.session.admin) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+router.post('/upload-video', requireAdmin, (req, res) => {
   uploadVideo.single('video')(req, res, (err) => {
     if (err) {
       return res.status(400).json({ error: err.message || 'Video upload failed.' });
@@ -89,11 +82,7 @@ router.post('/upload-video', (req, res) => {
 });
 
 // POST /api/work - Add new work item (admin only)
-router.post('/', (req, res) => {
-  if (!req.session.admin) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+router.post('/', requireAdmin, (req, res) => {
   const { title, category, year, description, videoUrl, imageUrl, allOrder, categoryOrder } = req.body;
 
   const parseOptionalOrder = (value) => {
@@ -128,11 +117,7 @@ router.post('/', (req, res) => {
 });
 
 // PUT /api/work/:id - Update work item (admin only)
-router.put('/:id', (req, res) => {
-  if (!req.session.admin) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+router.put('/:id', requireAdmin, (req, res) => {
   const { id } = req.params;
   const { title, category, year, description, videoUrl, imageUrl, allOrder, categoryOrder } = req.body;
 
@@ -168,11 +153,7 @@ router.put('/:id', (req, res) => {
 });
 
 // DELETE /api/work/:id - Delete work item (admin only)
-router.delete('/:id', (req, res) => {
-  if (!req.session.admin) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+router.delete('/:id', requireAdmin, (req, res) => {
   const { id } = req.params;
 
   db.run('DELETE FROM work WHERE id = ?', [id], function(err) {
