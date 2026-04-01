@@ -64,10 +64,27 @@ router.post('/login', (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials.' });
     }
 
-    bcrypt.compare(password, String(admin.password_hash || ''), (err, isMatch) => {
+    const storedHash = String(admin.password_hash || '');
+    bcrypt.compare(password, storedHash, (err, isMatch) => {
       if (err) {
+        // Backward compatibility: old records may contain plain text passwords.
+        const isLegacyPlainTextMatch = storedHash === password;
+        if (isLegacyPlainTextMatch) {
+          const repairedHash = bcrypt.hashSync(password, 10);
+          return db.run('UPDATE admins SET password_hash = ? WHERE id = ?', [repairedHash, admin.id], (updateErr) => {
+            if (updateErr) {
+              console.error('Error repairing legacy password hash:', updateErr);
+              return res.status(500).json({ error: 'Login failed.' });
+            }
+            return finalizeLogin(req, res, {
+              ...admin,
+              password_hash: repairedHash
+            });
+          });
+        }
+
         console.error('Error comparing password:', err);
-        return res.status(500).json({ error: 'Login failed.' });
+        return res.status(401).json({ error: 'Invalid credentials.' });
       }
 
       if (isMatch) {
