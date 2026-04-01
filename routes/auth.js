@@ -4,15 +4,34 @@ const router = express.Router();
 const db = require('../database');
 const { getAdminPayload, createAdminToken } = require('./authMiddleware');
 
+function ensureDefaultAdminIfMissing(username, callback) {
+  db.get('SELECT * FROM admins WHERE username = ?', [username], (err, admin) => {
+    if (err) return callback(err, null);
+    if (admin) return callback(null, admin);
+
+    // Bootstrap a default admin account for fresh serverless instances.
+    if (username !== 'admin') return callback(null, null);
+
+    const hash = bcrypt.hashSync('admin123', 10);
+    db.run('INSERT INTO admins (username, password_hash) VALUES (?, ?)', ['admin', hash], (insertErr) => {
+      if (insertErr) return callback(insertErr, null);
+      db.get('SELECT * FROM admins WHERE username = ?', ['admin'], callback);
+    });
+  });
+}
+
 // POST /api/auth/login - Admin login
 router.post('/login', (req, res) => {
-  const { username, password } = req.body;
+  const rawUsername = req.body && req.body.username;
+  const rawPassword = req.body && req.body.password;
+  const username = String(rawUsername || '').trim().toLowerCase();
+  const password = String(rawPassword || '').trim();
 
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required.' });
   }
 
-  db.get('SELECT * FROM admins WHERE username = ?', [username], (err, admin) => {
+  ensureDefaultAdminIfMissing(username, (err, admin) => {
     if (err) {
       console.error('Error fetching admin:', err);
       return res.status(500).json({ error: 'Login failed.' });
@@ -22,7 +41,7 @@ router.post('/login', (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials.' });
     }
 
-    bcrypt.compare(password, admin.password_hash, (err, isMatch) => {
+    bcrypt.compare(password, String(admin.password_hash || ''), (err, isMatch) => {
       if (err) {
         console.error('Error comparing password:', err);
         return res.status(500).json({ error: 'Login failed.' });
