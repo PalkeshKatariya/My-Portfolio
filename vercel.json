@@ -1,12 +1,6 @@
 {
-  "version": 2,
   "routes": [
-    {
-      "src": "/admin(?:\\.html)?",
-      "dest": "/public/admin.html"
-    },
-    {
-      "handle": "filesystem"
-    }
+    { "src": "/admin", "dest": "/admin.html" },
+    { "src": "/(.*)", "dest": "/$1" }
   ]
 }
