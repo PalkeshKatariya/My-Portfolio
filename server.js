@@ -32,7 +32,7 @@ app.use('/api/auth', authRoutes);
 
 // Serve the main portfolio page
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'portfolio (1).html'));
+  res.sendFile(path.join(__dirname, 'portfolio.html'));
 });
 
 // Serve admin page specifically

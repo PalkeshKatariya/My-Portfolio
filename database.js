@@ -1,4 +1,4 @@
-const initSqlJs = require('sql.js');
+const initSqlJs = require('sql.js/dist/sql-asm.js');
 
 let db = null;
 let dbReady = null;
@@ -7,9 +7,10 @@ let dbReady = null;
 function initDatabase() {
   if (dbReady) return dbReady;
 
-  dbReady = initSqlJs().then((SQL) => {
+  dbReady = (async () => {
+    const SQL = await initSqlJs();
     db = new SQL.Database();
-    console.log('Connected to in-memory SQLite database (sql.js).');
+    console.log('Connected to in-memory SQLite database.');
 
     // Initialize tables
     db.run(`
@@ -58,7 +59,7 @@ function initDatabase() {
     }
 
     return db;
-  });
+  })();
 
   return dbReady;
 }
@@ -70,7 +71,6 @@ const dbWrapper = {
       try {
         database.run(sql, params || []);
         if (callback) {
-          // Simulate `this.lastID` and `this.changes`
           const lastID = database.exec("SELECT last_insert_rowid() as id");
           const changes = database.exec("SELECT changes() as c");
           const context = {
