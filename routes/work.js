@@ -2,31 +2,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
-const uploadsDir = path.join(__dirname, '..', 'public', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-const videosDir = path.join(__dirname, '..', 'public', 'uploads', 'videos');
-if (!fs.existsSync(videosDir)) {
-  fs.mkdirSync(videosDir, { recursive: true });
-}
-
-// ── Thumbnail multer ──
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadsDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname || '').toLowerCase();
-    const safeExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext) ? ext : '.jpg';
-    cb(null, `thumb-${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`);
-  }
-});
-
+// Use memory storage for Vercel (read-only filesystem)
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 }, // 8 MB
   fileFilter: (_req, file, cb) => {
     if (file.mimetype && file.mimetype.startsWith('image/')) {
@@ -37,19 +16,9 @@ const upload = multer({
   }
 });
 
-// ── Video multer ──
-const videoStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, videosDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname || '').toLowerCase();
-    const safeExt = ['.mp4', '.webm', '.mov', '.m4v', '.mkv'].includes(ext) ? ext : '.mp4';
-    cb(null, `video-${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`);
-  }
-});
-
 const uploadVideo = multer({
-  storage: videoStorage,
-  limits: { fileSize: 1024 * 1024 * 1024 }, // 1 GB
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB (Vercel payload limit)
   fileFilter: (_req, file, cb) => {
     if (file.mimetype && file.mimetype.startsWith('video/')) {
       cb(null, true);
@@ -84,9 +53,13 @@ router.post('/upload-thumbnail', (req, res) => {
       return res.status(400).json({ error: 'No file uploaded.' });
     }
 
+    // In production, upload to a cloud storage service (e.g., Cloudinary, S3)
+    // For now, return the file as a base64 data URL
+    const base64 = req.file.buffer.toString('base64');
+    const dataUrl = `data:${req.file.mimetype};base64,${base64}`;
     return res.status(201).json({
       message: 'Thumbnail uploaded successfully.',
-      imageUrl: `/uploads/${req.file.filename}`
+      imageUrl: dataUrl
     });
   });
 });
@@ -105,9 +78,12 @@ router.post('/upload-video', (req, res) => {
       return res.status(400).json({ error: 'No file uploaded.' });
     }
 
+    // In production, upload to a cloud storage service (e.g., Cloudinary, S3)
+    const base64 = req.file.buffer.toString('base64');
+    const dataUrl = `data:${req.file.mimetype};base64,${base64}`;
     return res.status(201).json({
       message: 'Video uploaded successfully.',
-      videoUrl: `/uploads/videos/${req.file.filename}`
+      videoUrl: dataUrl
     });
   });
 });
