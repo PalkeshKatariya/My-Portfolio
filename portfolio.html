@@ -1723,12 +1723,52 @@
     probe.src = videoUrl;
   }
 
+  const FALLBACK_WORK_ITEMS = [
+    {
+      title: 'Grudge',
+      category: 'wedding',
+      year: 2025,
+      description: 'Short film',
+      video_url: 'https://youtu.be/s4nC6PtPjmo?si=UoLTtSc3LLeFNfWj',
+      image_url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=900&q=80',
+      all_order: 1,
+      category_order: 1
+    },
+    {
+      title: 'knock knock - BRAND FILM',
+      category: 'commercial',
+      year: 2024,
+      description: 'Brand film',
+      video_url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
+      image_url: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=900&q=80',
+      all_order: 2,
+      category_order: 1
+    },
+    {
+      title: 'SOUNDWAVE FESTIVAL 2023',
+      category: 'events',
+      year: 2023,
+      description: 'Live event coverage',
+      video_url: 'https://www.youtube.com/watch?v=ZrOKjDZOtkA',
+      image_url: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=900&q=80',
+      all_order: 3,
+      category_order: 1
+    }
+  ];
+
+  function getDisplayItems(apiItems) {
+    return Array.isArray(apiItems) && apiItems.length ? apiItems : FALLBACK_WORK_ITEMS;
+  }
+
   async function loadDynamicWork() {
     if (!API_BASE) return;
     try {
       const res = await fetch(`${API_BASE}/work`);
-      if (!res.ok) return;
-      const items = await res.json();
+      let apiItems = [];
+      if (res.ok) {
+        apiItems = await res.json();
+      }
+      const items = getDisplayItems(apiItems);
       const grid = document.getElementById('workGrid');
       grid.innerHTML = ''; // clear placeholder comment
 
@@ -1808,6 +1848,48 @@
       initCarousel();
     } catch (e) {
       console.error('Failed to load dynamic work:', e);
+      const grid = document.getElementById('workGrid');
+      if (!grid) return;
+      const items = getDisplayItems([]);
+      const track = document.createElement('div');
+      track.className = 'work-carousel-track';
+      track.id = 'carouselTrack';
+
+      items.forEach((item, index) => {
+        const title = item.title || '';
+        const category = (item.category || 'other').toLowerCase();
+        const year = item.year || '';
+        const videoUrl = item.video_url || item.videoUrl || '';
+        const imageUrl = item.image_url || item.imageUrl || '';
+        const desc = item.description || category;
+        const safeTitle = title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const safeYear = String(year).replace(/'/g, "\\'");
+
+        const card = document.createElement('div');
+        card.className = 'work-card work-card-flip';
+        card.dataset.cat = category;
+        card.dataset.seq = String(index);
+        card.dataset.allOrder = String(index + 1);
+        card.dataset.catOrder = String(index + 1);
+        setCardAspectRatio(card, '16 / 9');
+
+        card.innerHTML = `
+          <div class="work-thumb">
+            <div class="work-thumb-bg" style="background-image:url('${imageUrl}')"></div>
+            ${videoUrl ? `<div class="play-btn" onclick="openModal('${safeTitle}','${safeYear}','${videoUrl}')"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>` : ''}
+          </div>
+          <div class="work-info">
+            <div class="work-cat" data-cat="${category}"><span class="cat-dot"></span>${desc}</div>
+            <div class="work-name">${title}</div>
+            <div class="work-year">${year}</div>
+          </div>`;
+
+        track.appendChild(card);
+      });
+
+      grid.innerHTML = '';
+      grid.appendChild(track);
+      initCarousel();
     }
   }
   loadDynamicWork();
