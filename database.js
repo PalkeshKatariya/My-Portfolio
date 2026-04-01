@@ -58,6 +58,82 @@ function initDatabase() {
       console.log('Admin user created: admin / admin123');
     }
 
+    // Seed default portfolio items when running on ephemeral environments.
+    const workCountResult = db.exec('SELECT COUNT(*) AS count FROM work');
+    const workCount = workCountResult[0] && workCountResult[0].values[0]
+      ? Number(workCountResult[0].values[0][0])
+      : 0;
+
+    if (workCount === 0) {
+      const seedItems = [
+        {
+          title: 'Grudge',
+          category: 'wedding',
+          year: 2025,
+          description: 'Short film',
+          video_url: 'https://youtu.be/s4nC6PtPjmo?si=UoLTtSc3LLeFNfWj',
+          image_url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=900&q=80',
+          all_order: 1,
+          category_order: 1
+        },
+        {
+          title: 'knock knock - BRAND FILM',
+          category: 'commercial',
+          year: 2024,
+          description: 'Brand film',
+          video_url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
+          image_url: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=900&q=80',
+          all_order: 2,
+          category_order: 1
+        },
+        {
+          title: 'SOUNDWAVE FESTIVAL 2023',
+          category: 'events',
+          year: 2023,
+          description: 'Live event coverage',
+          video_url: 'https://www.youtube.com/watch?v=ZrOKjDZOtkA',
+          image_url: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=900&q=80',
+          all_order: 3,
+          category_order: 1
+        },
+        {
+          title: 'LUMIERE - LUXURY AD',
+          category: 'commercial',
+          year: 2023,
+          description: 'Luxury commercial',
+          video_url: 'https://www.youtube.com/watch?v=ywJn-mCZKKA',
+          image_url: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=900&q=80',
+          all_order: 4,
+          category_order: 2
+        },
+        {
+          title: 'MAYA and RAJ - THE CEREMONY',
+          category: 'wedding',
+          year: 2023,
+          description: 'Wedding film',
+          video_url: 'https://www.youtube.com/watch?v=3JZ_D3ELwOQ',
+          image_url: 'https://images.unsplash.com/photo-1583939411023-14783179e581?w=900&q=80',
+          all_order: 5,
+          category_order: 2
+        }
+      ];
+
+      const insertSql = 'INSERT INTO work (title, category, year, description, video_url, image_url, all_order, category_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+      seedItems.forEach((item) => {
+        db.run(insertSql, [
+          item.title,
+          item.category,
+          item.year,
+          item.description,
+          item.video_url,
+          item.image_url,
+          item.all_order,
+          item.category_order
+        ]);
+      });
+      console.log(`Seeded ${seedItems.length} default work items.`);
+    }
+
     return db;
   })();
 
