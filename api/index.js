@@ -32,6 +32,21 @@ try {
   try { app.use('/api/work', require('../routes/work')); } catch (e) { bootErrors.push('routes/work: ' + e.message); }
   try { app.use('/api/auth', require('../routes/auth')); } catch (e) { bootErrors.push('routes/auth: ' + e.message); }
 
+  // ── Debug endpoint ──
+  app.get('/api/debug', async (_req, res) => {
+    const info = { bootErrors, env: !!process.env.VERCEL };
+    try {
+      const db = require('../database');
+      await new Promise((resolve, reject) => {
+        db.all('SELECT id, title, LENGTH(video_url) as vlen, LENGTH(image_url) as ilen FROM work LIMIT 3', [], (err, rows) => {
+          if (err) { info.dbError = err.message; reject(err); }
+          else { info.workSample = rows; info.workCount = rows.length; resolve(); }
+        });
+      });
+    } catch (e) { info.dbCrash = e.message; }
+    res.json(info);
+  });
+
   // ── Global error handler ──
   app.use((err, _req, res, _next) => {
     console.error('Unhandled Express error:', err);
