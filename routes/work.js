@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database');
+const workStore = require('../data/workStore');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -64,13 +64,13 @@ const uploadVideo = multer({
 
 // GET /api/work - Get all work items
 router.get('/', (req, res) => {
-  db.all('SELECT * FROM work ORDER BY COALESCE(all_order, 2147483647) ASC, created_at DESC', [], (err, rows) => {
-    if (err) {
-      console.error('Error fetching work:', err);
-      return res.status(500).json({ error: 'Failed to fetch work items.' });
-    }
-    res.json(rows);
-  });
+  try {
+    const items = workStore.getAll();
+    res.json(items);
+  } catch (err) {
+    console.error('Error fetching work:', err);
+    res.status(500).json({ error: 'Failed to fetch work items.' });
+  }
 });
 
 // POST /api/work/upload-thumbnail - Upload thumbnail image (admin only)
@@ -129,89 +129,43 @@ router.post('/upload-video', requireAdmin, (req, res) => {
 
 // POST /api/work - Add new work item (admin only)
 router.post('/', requireAdmin, (req, res) => {
-  const { title, category, year, description, videoUrl, imageUrl, allOrder, categoryOrder } = req.body;
-
-  const parseOptionalOrder = (value) => {
-    if (value === '' || value === null || value === undefined) return null;
-    const parsed = Number.parseInt(value, 10);
-    return Number.isFinite(parsed) ? parsed : null;
-  };
-
+  const { title, category } = req.body;
   if (!title || !category) {
     return res.status(400).json({ error: 'Title and category are required.' });
   }
-
-  const sql = 'INSERT INTO work (title, category, year, description, video_url, image_url, all_order, category_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-  const params = [
-    title,
-    category,
-    year || null,
-    description || '',
-    videoUrl || '',
-    imageUrl || '',
-    parseOptionalOrder(allOrder),
-    parseOptionalOrder(categoryOrder)
-  ];
-
-  db.run(sql, params, function(err) {
-    if (err) {
-      console.error('Error inserting work:', err);
-      return res.status(500).json({ error: 'Failed to add work item.' });
-    }
-    res.status(201).json({ message: 'Work item added successfully!', id: this.lastID });
-  });
+  try {
+    const item = workStore.create(req.body);
+    res.status(201).json({ message: 'Work item added successfully!', id: item.id });
+  } catch (err) {
+    console.error('Error inserting work:', err);
+    res.status(500).json({ error: 'Failed to add work item.' });
+  }
 });
 
 // PUT /api/work/:id - Update work item (admin only)
 router.put('/:id', requireAdmin, (req, res) => {
   const { id } = req.params;
-  const { title, category, year, description, videoUrl, imageUrl, allOrder, categoryOrder } = req.body;
-
-  const parseOptionalOrder = (value) => {
-    if (value === '' || value === null || value === undefined) return null;
-    const parsed = Number.parseInt(value, 10);
-    return Number.isFinite(parsed) ? parsed : null;
-  };
-
-  const sql = 'UPDATE work SET title = ?, category = ?, year = ?, description = ?, video_url = ?, image_url = ?, all_order = ?, category_order = ? WHERE id = ?';
-  const params = [
-    title,
-    category,
-    year,
-    description,
-    videoUrl,
-    imageUrl,
-    parseOptionalOrder(allOrder),
-    parseOptionalOrder(categoryOrder),
-    id
-  ];
-
-  db.run(sql, params, function(err) {
-    if (err) {
-      console.error('Error updating work:', err);
-      return res.status(500).json({ error: 'Failed to update work item.' });
-    }
-    if (this.changes === 0) {
-      return res.status(404).json({ error: 'Work item not found.' });
-    }
+  try {
+    const item = workStore.update(id, req.body);
+    if (!item) return res.status(404).json({ error: 'Work item not found.' });
     res.json({ message: 'Work item updated successfully!' });
-  });
+  } catch (err) {
+    console.error('Error updating work:', err);
+    res.status(500).json({ error: 'Failed to update work item.' });
+  }
 });
 
 // DELETE /api/work/:id - Delete work item (admin only)
 router.delete('/:id', requireAdmin, (req, res) => {
   const { id } = req.params;
-
-  db.run('DELETE FROM work WHERE id = ?', [id], function(err) {
-    if (err) {
-      console.error('Error deleting work:', err);
-      return res.status(500).json({ error: 'Failed to delete work item.' });
-    }
-    if (this.changes === 0) {
-      return res.status(404).json({ error: 'Work item not found.' });
-    }
+  try {
+    const removed = workStore.remove(id);
+    if (!removed) return res.status(404).json({ error: 'Work item not found.' });
     res.json({ message: 'Work item deleted successfully!' });
-  });
+  } catch (err) {
+    console.error('Error deleting work:', err);
+    res.status(500).json({ error: 'Failed to delete work item.' });
+  }
 });
 
 module.exports = router;
