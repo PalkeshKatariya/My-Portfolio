@@ -913,9 +913,46 @@
     .modal-video {
       width: 100%; aspect-ratio: 16/9;
       background: var(--deep);
-      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
     }
     .modal-video iframe, .modal-video video { width: 100%; height: 100%; border: none; }
+
+    /* ── Custom Player Controls ── */
+    .cp-controls {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,.85));
+      padding: 18px 16px 12px; display: flex; align-items: center; gap: 12px;
+      opacity: 0; transition: opacity .3s; z-index: 10;
+    }
+    .modal-video:hover .cp-controls, .cp-controls.cp-show { opacity: 1; }
+    .cp-btn {
+      background: none; border: none; color: #fff; cursor: pointer;
+      padding: 4px; display: flex; align-items: center; transition: color .2s;
+    }
+    .cp-btn:hover { color: var(--cyan); }
+    .cp-btn svg { width: 20px; height: 20px; fill: currentColor; }
+    .cp-progress-wrap {
+      flex: 1; height: 4px; background: rgba(255,255,255,.2);
+      border-radius: 2px; cursor: pointer; position: relative;
+    }
+    .cp-progress-wrap:hover { height: 6px; }
+    .cp-progress-bar {
+      height: 100%; background: var(--cyan); border-radius: 2px;
+      width: 0%; transition: width .1s linear; pointer-events: none;
+    }
+    .cp-time {
+      font-family: 'Space Mono', monospace; font-size: .6rem;
+      color: rgba(255,255,255,.7); min-width: 70px; text-align: center;
+      user-select: none;
+    }
+    .cp-vol-wrap {
+      width: 60px; height: 4px; background: rgba(255,255,255,.2);
+      border-radius: 2px; cursor: pointer; position: relative;
+    }
+    .cp-vol-bar {
+      height: 100%; background: #fff; border-radius: 2px;
+      width: 100%; pointer-events: none;
+    }
     .modal-info { margin-top: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
     .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; letter-spacing: .06em; }
     .modal-meta { font-family: 'Space Mono', monospace; font-size: .65rem; color: var(--muted); }
@@ -1009,8 +1046,29 @@
   <div class="modal-box">
     <button class="modal-close" id="modalClose">✕ CLOSE</button>
     <div class="modal-video" id="modalVideo">
-      <iframe id="modalIframe" src="" allowfullscreen></iframe>
-      <video id="modalVideoEl" controls style="display:none;background:#000;"></video>
+      <div id="ytPlayerContainer" style="width:100%;height:100%;display:none;"></div>
+      <video id="modalVideoEl" style="display:none;background:#000;width:100%;height:100%;"></video>
+      <!-- Custom Controls -->
+      <div class="cp-controls" id="cpControls">
+        <button class="cp-btn" id="cpPlay" title="Play/Pause">
+          <svg id="cpIconPlay" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+          <svg id="cpIconPause" viewBox="0 0 24 24" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        </button>
+        <div class="cp-time" id="cpTime">0:00 / 0:00</div>
+        <div class="cp-progress-wrap" id="cpProgressWrap">
+          <div class="cp-progress-bar" id="cpProgressBar"></div>
+        </div>
+        <button class="cp-btn" id="cpMute" title="Mute">
+          <svg id="cpIconVol" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+          <svg id="cpIconMute" viewBox="0 0 24 24" style="display:none"><path d="M3 9v6h4l5 5V4L7 9H3z"/><line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2"/><line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+        <div class="cp-vol-wrap" id="cpVolWrap">
+          <div class="cp-vol-bar" id="cpVolBar"></div>
+        </div>
+        <button class="cp-btn" id="cpFullscreen" title="Fullscreen">
+          <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        </button>
+      </div>
     </div>
     <div class="modal-info">
       <div>
@@ -1442,90 +1500,219 @@
     });
   });
 
-  // ── MODAL ──
+  // ── CUSTOM VIDEO PLAYER ──
   const modal      = document.getElementById('modal');
-  const iframe     = document.getElementById('modalIframe');
   const videoEl    = document.getElementById('modalVideoEl');
+  const ytContainer = document.getElementById('ytPlayerContainer');
   const modalTitle = document.getElementById('modalTitle');
   const modalMeta  = document.getElementById('modalMeta');
+  const cpControls = document.getElementById('cpControls');
+  const cpPlay     = document.getElementById('cpPlay');
+  const cpMute     = document.getElementById('cpMute');
+  const cpFullscreen = document.getElementById('cpFullscreen');
+  const cpProgressWrap = document.getElementById('cpProgressWrap');
+  const cpProgressBar  = document.getElementById('cpProgressBar');
+  const cpVolWrap  = document.getElementById('cpVolWrap');
+  const cpVolBar   = document.getElementById('cpVolBar');
+  const cpTime     = document.getElementById('cpTime');
+  const cpIconPlay = document.getElementById('cpIconPlay');
+  const cpIconPause = document.getElementById('cpIconPause');
+  const cpIconVol  = document.getElementById('cpIconVol');
+  const cpIconMute = document.getElementById('cpIconMute');
 
-  function normalizeVideoSource(src) {
+  let ytPlayer = null;
+  let ytReady  = false;
+  let currentMode = null; // 'yt' | 'native'
+  let cpTimer  = null;
+
+  // Load YouTube IFrame API once
+  (function loadYTAPI() {
+    if (window.YT && window.YT.Player) { ytReady = true; return; }
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+  })();
+  window.onYouTubeIframeAPIReady = () => { ytReady = true; };
+
+  function extractYouTubeId(src) {
     if (!src) return '';
-    const value = String(src).trim();
     try {
-      const url = new URL(value, window.location.origin);
+      const url = new URL(String(src).trim(), window.location.origin);
       const host = (url.hostname || '').toLowerCase();
-      let videoId = '';
-
-      if (host === 'youtu.be') {
-        videoId = url.pathname.slice(1);
-      } else if (host.endsWith('youtube.com')) {
-        if (url.pathname === '/watch') {
-          videoId = url.searchParams.get('v') || '';
-        } else if (url.pathname.startsWith('/shorts/')) {
-          videoId = url.pathname.split('/')[2] || '';
-        } else if (url.pathname.startsWith('/embed/')) {
-          videoId = url.pathname.split('/')[2] || '';
-        }
+      if (host === 'youtu.be') return url.pathname.slice(1);
+      if (host.endsWith('youtube.com')) {
+        if (url.pathname === '/watch') return url.searchParams.get('v') || '';
+        if (url.pathname.startsWith('/shorts/')) return url.pathname.split('/')[2] || '';
+        if (url.pathname.startsWith('/embed/')) return url.pathname.split('/')[2] || '';
       }
-
-      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
-      return value;
-    } catch {
-      return value;
-    }
+    } catch {}
+    return '';
   }
 
   function isDirectVideoSource(src) {
     if (!src) return false;
-    return (
-      src.startsWith('data:video/') ||
-      src.startsWith('blob:') ||
-      src.startsWith('/uploads/') ||
-      /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(src)
-    );
+    return src.startsWith('data:video/') || src.startsWith('blob:') || src.startsWith('/uploads/') || /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(src);
   }
 
   function isLocalVideo(src) {
     if (!src) return false;
-    return (
-      src.startsWith('/uploads/') ||
-      src.startsWith('data:video/') ||
-      /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(src)
-    );
+    return src.startsWith('/uploads/') || src.startsWith('data:video/') || /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(src);
   }
 
+  function fmtTime(s) {
+    if (!s || !isFinite(s)) return '0:00';
+    const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+    return m + ':' + String(sec).padStart(2, '0');
+  }
+
+  // ── Update loop ──
+  function startCpLoop() {
+    stopCpLoop();
+    cpTimer = setInterval(updateCpUI, 250);
+  }
+  function stopCpLoop() { if (cpTimer) { clearInterval(cpTimer); cpTimer = null; } }
+
+  function updateCpUI() {
+    let cur = 0, dur = 0, playing = false, vol = 1, muted = false;
+    if (currentMode === 'yt' && ytPlayer && ytPlayer.getDuration) {
+      cur = ytPlayer.getCurrentTime() || 0;
+      dur = ytPlayer.getDuration() || 0;
+      playing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+      vol = (ytPlayer.getVolume() || 0) / 100;
+      muted = ytPlayer.isMuted();
+    } else if (currentMode === 'native') {
+      cur = videoEl.currentTime || 0;
+      dur = videoEl.duration || 0;
+      playing = !videoEl.paused;
+      vol = videoEl.volume;
+      muted = videoEl.muted;
+    }
+    cpProgressBar.style.width = dur ? (cur / dur * 100) + '%' : '0%';
+    cpTime.textContent = fmtTime(cur) + ' / ' + fmtTime(dur);
+    cpIconPlay.style.display  = playing ? 'none' : 'block';
+    cpIconPause.style.display = playing ? 'block' : 'none';
+    cpIconVol.style.display   = muted ? 'none' : 'block';
+    cpIconMute.style.display  = muted ? 'block' : 'none';
+    cpVolBar.style.width = muted ? '0%' : (vol * 100) + '%';
+  }
+
+  // ── Controls ──
+  cpPlay.addEventListener('click', () => {
+    if (currentMode === 'yt' && ytPlayer) {
+      const s = ytPlayer.getPlayerState();
+      s === YT.PlayerState.PLAYING ? ytPlayer.pauseVideo() : ytPlayer.playVideo();
+    } else if (currentMode === 'native') {
+      videoEl.paused ? videoEl.play() : videoEl.pause();
+    }
+  });
+
+  cpMute.addEventListener('click', () => {
+    if (currentMode === 'yt' && ytPlayer) {
+      ytPlayer.isMuted() ? ytPlayer.unMute() : ytPlayer.mute();
+    } else if (currentMode === 'native') {
+      videoEl.muted = !videoEl.muted;
+    }
+    updateCpUI();
+  });
+
+  cpProgressWrap.addEventListener('click', (e) => {
+    const pct = e.offsetX / cpProgressWrap.clientWidth;
+    if (currentMode === 'yt' && ytPlayer && ytPlayer.getDuration) {
+      ytPlayer.seekTo(pct * ytPlayer.getDuration(), true);
+    } else if (currentMode === 'native') {
+      videoEl.currentTime = pct * (videoEl.duration || 0);
+    }
+  });
+
+  cpVolWrap.addEventListener('click', (e) => {
+    const pct = Math.max(0, Math.min(1, e.offsetX / cpVolWrap.clientWidth));
+    if (currentMode === 'yt' && ytPlayer) {
+      ytPlayer.setVolume(pct * 100); ytPlayer.unMute();
+    } else if (currentMode === 'native') {
+      videoEl.volume = pct; videoEl.muted = false;
+    }
+    updateCpUI();
+  });
+
+  cpFullscreen.addEventListener('click', () => {
+    const el = document.getElementById('modalVideo');
+    if (document.fullscreenElement) { document.exitFullscreen(); }
+    else if (el.requestFullscreen) { el.requestFullscreen(); }
+  });
+
+  // ── Open / Close ──
   function openModal(title, meta, src) {
-    const resolvedSrc = normalizeVideoSource(src);
     modalTitle.textContent = title;
     modalMeta.textContent  = meta;
-    if (isDirectVideoSource(resolvedSrc)) {
-      iframe.src             = '';
-      iframe.style.display   = 'none';
-      videoEl.src            = resolvedSrc;
-      videoEl.style.display  = 'block';
+    const ytId = extractYouTubeId(src);
+
+    if (ytId) {
+      currentMode = 'yt';
+      videoEl.style.display = 'none';
+      ytContainer.style.display = 'block';
+      ytContainer.innerHTML = '';
+      const div = document.createElement('div');
+      div.id = 'ytPlayerDiv';
+      ytContainer.appendChild(div);
+
+      function createPlayer() {
+        ytPlayer = new YT.Player('ytPlayerDiv', {
+          width: '100%', height: '100%',
+          videoId: ytId,
+          playerVars: { autoplay: 1, controls: 0, modestbranding: 1, rel: 0, showinfo: 0, iv_load_policy: 3, fs: 0, disablekb: 0, playsinline: 1 },
+          events: {
+            onReady: () => { startCpLoop(); updateCpUI(); },
+            onStateChange: () => updateCpUI()
+          }
+        });
+      }
+
+      if (ytReady) { createPlayer(); }
+      else { const iv = setInterval(() => { if (ytReady) { clearInterval(iv); createPlayer(); } }, 200); }
+
+    } else if (isDirectVideoSource(String(src).trim())) {
+      currentMode = 'native';
+      ytContainer.style.display = 'none';
+      ytContainer.innerHTML = '';
+      videoEl.src = String(src).trim();
+      videoEl.style.display = 'block';
+      videoEl.play().catch(() => {});
+      startCpLoop();
+
     } else {
-      videoEl.pause();
-      videoEl.src            = '';
-      videoEl.style.display  = 'none';
-      iframe.style.display   = 'block';
-      iframe.src             = resolvedSrc;
+      // Fallback: treat as external embed via hidden iframe
+      currentMode = null;
+      ytContainer.style.display = 'block';
+      ytContainer.innerHTML = `<iframe src="${String(src).trim()}" style="width:100%;height:100%;border:none;" allowfullscreen></iframe>`;
+      videoEl.style.display = 'none';
+      cpControls.style.display = 'none';
     }
+
+    if (currentMode) cpControls.style.display = '';
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
   }
+
   document.getElementById('modalClose').addEventListener('click', closeModal);
   modal.addEventListener('click', e => { if(e.target === modal) closeModal(); });
   function closeModal() {
     modal.classList.remove('open');
-    iframe.src = '';
-    videoEl.pause();
-    videoEl.src = '';
-    videoEl.style.display = 'none';
-    iframe.style.display  = 'block';
+    stopCpLoop();
+    if (ytPlayer && ytPlayer.destroy) { try { ytPlayer.destroy(); } catch {} ytPlayer = null; }
+    ytContainer.innerHTML = '';
+    ytContainer.style.display = 'none';
+    videoEl.pause(); videoEl.src = ''; videoEl.style.display = 'none';
+    cpControls.style.display = '';
+    cpProgressBar.style.width = '0%';
+    cpTime.textContent = '0:00 / 0:00';
     document.body.style.overflow = '';
+    currentMode = null;
   }
-  document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+    if (!modal.classList.contains('open')) return;
+    if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); cpPlay.click(); }
+  });
 
   // ── SCROLL REVEAL ──
   const reveals = document.querySelectorAll('.reveal, .reveal-left, .reveal-right');
