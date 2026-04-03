@@ -824,17 +824,18 @@
                   <input type="url" id="videoUrl" class="form-input" placeholder="https://youtube.com/embed/...">
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Or Upload Video File (local)</label>
+                  <label class="form-label">Or Upload Video File (local dev only)</label>
                   <input type="file" id="videoFile" class="form-input" accept="video/*">
-                  <small style="color:var(--muted,#888);font-size:.75rem;">MP4 / WebM / MOV &mdash; max 1 GB. Local upload overrides the URL above.</small>
+                  <small style="color:var(--warn,#fbbf24);font-size:.75rem;">⚠ Vercel limits uploads to ~4 MB. For production, use a YouTube / external URL above.</small>
                 </div>
                 <div class="form-group full">
                   <label class="form-label">Image URL</label>
                   <input type="url" id="imageUrl" class="form-input" placeholder="https://...">
                 </div>
                 <div class="form-group full">
-                  <label class="form-label">Or Upload Thumbnail (Local File)</label>
+                  <label class="form-label">Or Upload Thumbnail</label>
                   <input type="file" id="thumbnailFile" class="form-input" accept="image/*">
+                  <small style="color:var(--muted,#888);font-size:.75rem;">Image will be auto-compressed before upload.</small>
                 </div>
                 <div class="form-group full">
                   <label class="form-label">Description</label>
@@ -1196,10 +1197,40 @@
   }
 
   // ── WORK FORM ──
+  // ── Client-side image compression ──
+  function compressImage(file, maxWidth = 1200, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          canvas.toBlob((blob) => {
+            if (!blob) return reject(new Error('Image compression failed.'));
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+          }, 'image/jpeg', quality);
+        };
+        img.onerror = () => reject(new Error('Could not read image file.'));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error('Could not read file.'));
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function uploadVideoIfSelected() {
     const input = document.getElementById('videoFile');
     const file = input && input.files ? input.files[0] : null;
     if (!file) return null;
+
+    // Warn if file is over 4 MB (Vercel limit)
+    if (file.size > 4 * 1024 * 1024) {
+      throw new Error('Video file is too large for the server (max ~4 MB on Vercel). Please use a YouTube / external URL instead.');
+    }
 
     showToast('Uploading video… please wait.', 'success');
     const formData = new FormData();
@@ -1221,7 +1252,7 @@
         const data = await res.json();
         errMsg = data.error || errMsg;
       } catch { /* response was not JSON */ }
-      if (res.status === 413) errMsg = 'Video file is too large for the server.';
+      if (res.status === 413) errMsg = 'Video file is too large for the server. Use a YouTube URL instead.';
       if (res.status === 401) errMsg = 'Session expired. Please log in again.';
       throw new Error(errMsg);
     }
@@ -1232,9 +1263,18 @@
 
   async function uploadThumbnailIfSelected() {
     const input = document.getElementById('thumbnailFile');
-    const file = input && input.files ? input.files[0] : null;
+    let file = input && input.files ? input.files[0] : null;
     if (!file) return null;
 
+    // Compress image client-side to stay under Vercel's 4.5 MB body limit
+    try {
+      showToast('Compressing thumbnail…', 'success');
+      file = await compressImage(file, 1200, 0.82);
+    } catch (compErr) {
+      console.warn('Compression failed, uploading original:', compErr);
+    }
+
+    showToast('Uploading thumbnail…', 'success');
     const formData = new FormData();
     formData.append('thumbnail', file);
 
@@ -1245,12 +1285,18 @@
         body: formData
       });
     } catch (networkErr) {
-      throw new Error('Network error during thumbnail upload.');
+      throw new Error('Network error during thumbnail upload. Check your connection.');
     }
 
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || 'Thumbnail upload failed.');
+      let errMsg = 'Thumbnail upload failed.';
+      try {
+        const data = await res.json();
+        errMsg = data.error || errMsg;
+      } catch { /* not JSON */ }
+      if (res.status === 413) errMsg = 'Thumbnail too large even after compression. Try a smaller image.';
+      if (res.status === 401) errMsg = 'Session expired. Please log in again.';
+      throw new Error(errMsg);
     }
 
     const data = await res.json();
