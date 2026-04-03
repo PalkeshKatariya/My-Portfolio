@@ -205,7 +205,6 @@ const dbWrapper = {
         } else {
           saveToFile();
         }
-        }
       } catch (err) {
         if (callback) callback.call({ lastID: 0, changes: 0 }, err);
       }
