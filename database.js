@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+
 let initSqlJs;
 try {
   initSqlJs = require('sql.js');
@@ -9,6 +12,22 @@ try {
 let db = null;
 let dbReady = null;
 
+// Persist database to disk so data survives restarts / Vercel cold starts
+const DB_FILE = process.env.VERCEL
+  ? '/tmp/portfolio.sqlite'
+  : path.join(__dirname, 'portfolio.sqlite');
+
+function saveToFile() {
+  try {
+    if (db) {
+      const data = db.export();
+      fs.writeFileSync(DB_FILE, Buffer.from(data));
+    }
+  } catch (e) {
+    console.error('Failed to persist database:', e.message);
+  }
+}
+
 // Initialize the database
 function initDatabase() {
   if (dbReady) return dbReady;
@@ -19,11 +38,25 @@ function initDatabase() {
   }
 
   dbReady = (async () => {
-    const SQL = await initSqlJs({
-      locateFile: file => `https://sql.js.org/dist/${file}`
-    });
-    db = new SQL.Database();
-    console.log('Connected to in-memory SQLite database.');
+    const SQL = await initSqlJs();
+
+    // Try loading existing database file
+    let loaded = false;
+    try {
+      if (fs.existsSync(DB_FILE)) {
+        const fileBuffer = fs.readFileSync(DB_FILE);
+        db = new SQL.Database(fileBuffer);
+        console.log('Loaded database from', DB_FILE);
+        loaded = true;
+      }
+    } catch (e) {
+      console.error('Failed to load database file, creating fresh:', e.message);
+    }
+
+    if (!loaded) {
+      db = new SQL.Database();
+      console.log('Created new in-memory SQLite database.');
+    }
 
     // Initialize tables
     db.run(`
@@ -147,6 +180,7 @@ function initDatabase() {
       console.log(`Seeded ${seedItems.length} default work items.`);
     }
 
+    saveToFile();
     return db;
   })();
 
@@ -166,7 +200,11 @@ const dbWrapper = {
             lastID: lastID[0] ? lastID[0].values[0][0] : 0,
             changes: changes[0] ? changes[0].values[0][0] : 0
           };
+          saveToFile();
           callback.call(context, null);
+        } else {
+          saveToFile();
+        }
         }
       } catch (err) {
         if (callback) callback.call({ lastID: 0, changes: 0 }, err);
