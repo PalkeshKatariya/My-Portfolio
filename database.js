@@ -3,7 +3,12 @@ const path = require('path');
 
 let initSqlJs;
 try {
-  initSqlJs = require('sql.js');
+  // On Vercel the .wasm binary is not bundled, so use the pure JS (ASM) build
+  if (process.env.VERCEL) {
+    initSqlJs = require('sql.js/dist/sql-asm.js');
+  } else {
+    initSqlJs = require('sql.js');
+  }
 } catch (e) {
   console.error('sql.js require failed:', e.message);
   initSqlJs = null;
@@ -11,6 +16,8 @@ try {
 
 // On Vercel the WASM binary may not be found automatically, so locate it explicitly
 function getSqlJsConfig() {
+  // ASM build doesn't need WASM config
+  if (process.env.VERCEL) return undefined;
   const candidates = [
     path.join(__dirname, 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
     path.resolve('node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
