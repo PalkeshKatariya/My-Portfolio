@@ -43,7 +43,9 @@
     [data-theme="light"] body { background: var(--navy); color: var(--text); }
     [data-theme="light"] nav { background: linear-gradient(180deg, rgba(240,245,251,.65) 0%, transparent 100%); backdrop-filter: blur(18px); }
     [data-theme="light"] nav.scrolled { background: rgba(240,245,251,.75); backdrop-filter: blur(18px); }
-    [data-theme="light"] .hero-bg { background: radial-gradient(ellipse 90% 70% at 60% 40%, #c5d9f0 0%, var(--navy) 70%); }
+    [data-theme="light"] .hero-bg { background: var(--navy); }
+    [data-theme="light"] .hero-bg::before { background: radial-gradient(ellipse 60% 40% at 50% 50%, #c5d9f0 0%, transparent 70%); }
+    [data-theme="light"] .hero-bg::after { background: radial-gradient(ellipse 50% 35% at 50% 50%, #b0cce6 0%, transparent 60%); }
     [data-theme="light"] .orb-1 { background: rgba(21,96,189,.15); }
     [data-theme="light"] .orb-2 { background: rgba(0,136,187,.12); }
     [data-theme="light"] .orb-3 { background: rgba(26,114,232,.1); }
@@ -197,17 +199,33 @@
     }
     .hero-bg {
       position: absolute; inset: 0; z-index: 0;
-      background: 
-      radial-gradient(ellipse 120% 80% at 50% 50%, #1a5088 0%, transparent 70%),
-      radial-gradient(ellipse 100% 70% at 80% 20%, #0d3a7a 0%, transparent 60%),
-      var(--navy);
-      background-size: 200% 200%, 200% 200%, 100% 100%;
-      background-position: 0% 0%, 100% 100%, 0% 0%;
-      animation: gradientFlow 10s ease-in-out infinite;
+      background: var(--navy);
+      overflow: hidden;
     }
-    @keyframes gradientFlow {
-      0%, 100% { background-position: 0% 0%, 100% 100%, 0% 0%; }
-      50% { background-position: 100% 100%, 0% 0%, 0% 0%; }
+    .hero-bg::before,
+    .hero-bg::after {
+      content: '';
+      position: absolute;
+      inset: -50%;
+      width: 200%; height: 200%;
+      border-radius: 50%;
+      will-change: transform;
+    }
+    .hero-bg::before {
+      background: radial-gradient(ellipse 60% 40% at 50% 50%, #1a5088 0%, transparent 70%);
+      animation: gradientA 10s ease-in-out infinite;
+    }
+    .hero-bg::after {
+      background: radial-gradient(ellipse 50% 35% at 50% 50%, #0d3a7a 0%, transparent 60%);
+      animation: gradientB 10s ease-in-out infinite;
+    }
+    @keyframes gradientA {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(15%, 12%); }
+    }
+    @keyframes gradientB {
+      0%, 100% { transform: translate(10%, -10%); }
+      50% { transform: translate(-15%, 10%); }
     }
     
     .hero-bg-video {
@@ -232,6 +250,7 @@
     /* glowing orbs */
     .orb {
       position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 1;
+      will-change: transform;
       animation: orbFloat 10s ease-in-out infinite;
     }
     .orb-1 { width: 500px; height: 500px; background: rgba(21,96,189,.25); top: -10%; right: 5%; }
