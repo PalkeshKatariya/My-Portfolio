@@ -74,8 +74,19 @@ router.get('/', (req, res) => {
 });
 
 // POST /api/work/upload-thumbnail - Upload thumbnail image (admin only)
+// Returns a base64 data URL so it works on Vercel (no persistent filesystem)
 router.post('/upload-thumbnail', requireAdmin, (req, res) => {
-  upload.single('thumbnail')(req, res, (err) => {
+  // Use memoryStorage for thumbnails — they're compressed client-side to ~100-300 KB
+  const memUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB safety cap
+    fileFilter: (_req, file, cb) => {
+      if (file.mimetype && file.mimetype.startsWith('image/')) cb(null, true);
+      else cb(new Error('Only image files are allowed.'));
+    }
+  });
+
+  memUpload.single('thumbnail')(req, res, (err) => {
     if (err) {
       console.error('Thumbnail upload error:', err.message, err.code);
       const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
@@ -85,7 +96,10 @@ router.post('/upload-thumbnail', requireAdmin, (req, res) => {
       return res.status(400).json({ error: 'No file uploaded.' });
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;
+    const mime = req.file.mimetype || 'image/jpeg';
+    const base64 = req.file.buffer.toString('base64');
+    const imageUrl = `data:${mime};base64,${base64}`;
+
     return res.status(201).json({
       message: 'Thumbnail uploaded successfully.',
       imageUrl
