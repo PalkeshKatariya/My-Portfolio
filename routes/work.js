@@ -2,12 +2,28 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { requireAdmin } = require('./authMiddleware');
 
-// Use memory storage for Vercel (read-only filesystem)
+// Ensure upload directories exist
+const UPLOAD_DIR = path.join(__dirname, '..', 'public', 'uploads');
+const VIDEO_DIR = path.join(UPLOAD_DIR, 'videos');
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+fs.mkdirSync(VIDEO_DIR, { recursive: true });
+
+// Disk storage for thumbnails
+const thumbStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.png';
+    cb(null, `thumb-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  }
+});
+
 const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 8 * 1024 * 1024 }, // 8 MB
+  storage: thumbStorage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
   fileFilter: (_req, file, cb) => {
     if (file.mimetype && file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -17,9 +33,18 @@ const upload = multer({
   }
 });
 
+// Disk storage for videos
+const videoStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, VIDEO_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.mp4';
+    cb(null, `video-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  }
+});
+
 const uploadVideo = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB (Vercel payload limit)
+  storage: videoStorage,
+  limits: { fileSize: 500 * 1024 * 1024 }, // 500 MB
   fileFilter: (_req, file, cb) => {
     if (file.mimetype && file.mimetype.startsWith('video/')) {
       cb(null, true);
@@ -50,13 +75,10 @@ router.post('/upload-thumbnail', requireAdmin, (req, res) => {
       return res.status(400).json({ error: 'No file uploaded.' });
     }
 
-    // In production, upload to a cloud storage service (e.g., Cloudinary, S3)
-    // For now, return the file as a base64 data URL
-    const base64 = req.file.buffer.toString('base64');
-    const dataUrl = `data:${req.file.mimetype};base64,${base64}`;
+    const imageUrl = `/uploads/${req.file.filename}`;
     return res.status(201).json({
       message: 'Thumbnail uploaded successfully.',
-      imageUrl: dataUrl
+      imageUrl
     });
   });
 });
@@ -71,12 +93,10 @@ router.post('/upload-video', requireAdmin, (req, res) => {
       return res.status(400).json({ error: 'No file uploaded.' });
     }
 
-    // In production, upload to a cloud storage service (e.g., Cloudinary, S3)
-    const base64 = req.file.buffer.toString('base64');
-    const dataUrl = `data:${req.file.mimetype};base64,${base64}`;
+    const videoUrl = `/uploads/videos/${req.file.filename}`;
     return res.status(201).json({
       message: 'Video uploaded successfully.',
-      videoUrl: dataUrl
+      videoUrl
     });
   });
 });

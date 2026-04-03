@@ -1486,6 +1486,15 @@
     );
   }
 
+  function isLocalVideo(src) {
+    if (!src) return false;
+    return (
+      src.startsWith('/uploads/') ||
+      src.startsWith('data:video/') ||
+      /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(src)
+    );
+  }
+
   function openModal(title, meta, src) {
     const resolvedSrc = normalizeVideoSource(src);
     modalTitle.textContent = title;
