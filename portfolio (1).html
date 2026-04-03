@@ -91,21 +91,21 @@
 
     /* ── CUSTOM CURSOR ── */
     #cursor {
-      position: fixed; z-index: 9999; pointer-events: none;
+      position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;
       width: 12px; height: 12px;
-      background:red;
+      background: red;
       border-radius: 50%;
-      transform: translate(-50%, -50%);
-      transition: transform .08s, width .2s, height .2s, background .2s;
+      will-change: transform;
+      transition: width .2s, height .2s, background .2s;
       /* mix-blend-mode: difference; */
     }
     #cursor-ring {
-      position: fixed; z-index: 9998; pointer-events: none;
+      position: fixed; top: 0; left: 0; z-index: 9998; pointer-events: none;
       width: 38px; height: 38px;
       border: 1.5px solid var(--text);
       border-radius: 50%;
-      transform: translate(-50%, -50%);
-      transition: transform .18s ease, width .25s, height .25s, border-color .2s;
+      will-change: transform;
+      transition: width .25s, height .25s, border-color .2s;
       /* mix-blend-mode: screen; */
     }
     body:has(a:hover) #cursor, body:has(button:hover) #cursor { width: 6px; height: 6px; }
@@ -1341,14 +1341,22 @@
   // ── CURSOR ──
   const cur = document.getElementById('cursor');
   const ring = document.getElementById('cursor-ring');
+  let mouseX = 0, mouseY = 0, ringX = 0, ringY = 0;
+
   document.addEventListener('mousemove', e => {
-    cur.style.left = e.clientX + 'px';
-    cur.style.top = e.clientY + 'px';
-    setTimeout(() => {
-      ring.style.left = e.clientX + 'px';
-      ring.style.top = e.clientY + 'px';
-    }, 80);
+    mouseX = e.clientX;
+    mouseY = e.clientY;
   });
+
+  (function animateCursor() {
+    // Dot follows instantly
+    cur.style.transform = `translate(${mouseX - 6}px, ${mouseY - 6}px)`;
+    // Ring lerps behind for a smooth trailing effect
+    ringX += (mouseX - 19 - ringX) * 0.15;
+    ringY += (mouseY - 19 - ringY) * 0.15;
+    ring.style.transform = `translate(${ringX}px, ${ringY}px)`;
+    requestAnimationFrame(animateCursor);
+  })();
 
   // ── NAV SCROLL ──
   const navbar = document.getElementById('navbar');
