@@ -1098,16 +1098,39 @@
   async function loadWork() {
     try {
       const res = await authFetch(`${API_BASE}/work`);
-      allWork = await res.json();
-    } catch { allWork = []; }
+      if (!res.ok) {
+        console.error('Failed to fetch work items:', res.status, res.statusText);
+        showToast(`Failed to load work items (HTTP ${res.status}).`, 'error');
+        allWork = [];
+      } else {
+        const data = await res.json();
+        allWork = Array.isArray(data) ? data : [];
+        if (!Array.isArray(data)) {
+          console.error('API returned non-array for work:', data);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading work:', err);
+      showToast('Could not connect to API to load work items.', 'error');
+      allWork = [];
+    }
     renderWorkTable();
   }
 
   async function loadInquiries() {
     try {
       const res = await authFetch(`${API_BASE}/contact`);
-      allInquiries = await res.json();
-    } catch { allInquiries = []; }
+      if (!res.ok) {
+        console.error('Failed to fetch inquiries:', res.status, res.statusText);
+        allInquiries = [];
+      } else {
+        const data = await res.json();
+        allInquiries = Array.isArray(data) ? data : [];
+      }
+    } catch (err) {
+      console.error('Error loading inquiries:', err);
+      allInquiries = [];
+    }
     renderInquiries();
     renderDashInquiries();
   }
@@ -1178,17 +1201,29 @@
     const file = input && input.files ? input.files[0] : null;
     if (!file) return null;
 
+    showToast('Uploading video… please wait.', 'success');
     const formData = new FormData();
     formData.append('video', file);
 
-    const res = await authFetch(`${API_BASE}/work/upload-video`, {
-      method: 'POST',
-      body: formData
-    });
+    let res;
+    try {
+      res = await authFetch(`${API_BASE}/work/upload-video`, {
+        method: 'POST',
+        body: formData
+      });
+    } catch (networkErr) {
+      throw new Error('Network error during video upload. Check your connection.');
+    }
 
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || 'Video upload failed.');
+      let errMsg = 'Video upload failed.';
+      try {
+        const data = await res.json();
+        errMsg = data.error || errMsg;
+      } catch { /* response was not JSON */ }
+      if (res.status === 413) errMsg = 'Video file is too large for the server.';
+      if (res.status === 401) errMsg = 'Session expired. Please log in again.';
+      throw new Error(errMsg);
     }
 
     const data = await res.json();
@@ -1203,10 +1238,15 @@
     const formData = new FormData();
     formData.append('thumbnail', file);
 
-    const res = await authFetch(`${API_BASE}/work/upload-thumbnail`, {
-      method: 'POST',
-      body: formData
-    });
+    let res;
+    try {
+      res = await authFetch(`${API_BASE}/work/upload-thumbnail`, {
+        method: 'POST',
+        body: formData
+      });
+    } catch (networkErr) {
+      throw new Error('Network error during thumbnail upload.');
+    }
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));

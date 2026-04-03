@@ -77,7 +77,9 @@ router.get('/', (req, res) => {
 router.post('/upload-thumbnail', requireAdmin, (req, res) => {
   upload.single('thumbnail')(req, res, (err) => {
     if (err) {
-      return res.status(400).json({ error: err.message || 'Upload failed.' });
+      console.error('Thumbnail upload error:', err.message, err.code);
+      const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+      return res.status(status).json({ error: err.message || 'Upload failed.' });
     }
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded.' });
@@ -95,7 +97,9 @@ router.post('/upload-thumbnail', requireAdmin, (req, res) => {
 router.post('/upload-video', requireAdmin, (req, res) => {
   uploadVideo.single('video')(req, res, (err) => {
     if (err) {
-      return res.status(400).json({ error: err.message || 'Video upload failed.' });
+      console.error('Video upload error:', err.message, err.code);
+      const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+      return res.status(status).json({ error: err.message || 'Video upload failed.' });
     }
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded.' });
