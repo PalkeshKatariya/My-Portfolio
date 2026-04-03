@@ -9,6 +9,19 @@ try {
   initSqlJs = null;
 }
 
+// On Vercel the WASM binary may not be found automatically, so locate it explicitly
+function getSqlJsConfig() {
+  const candidates = [
+    path.join(__dirname, 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
+    path.resolve('node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
+    '/var/task/node_modules/sql.js/dist/sql-wasm.wasm'
+  ];
+  for (const p of candidates) {
+    try { if (fs.existsSync(p)) return { locateFile: () => p }; } catch { /* skip */ }
+  }
+  return undefined; // fall back to defaults
+}
+
 let db = null;
 let dbReady = null;
 
@@ -38,7 +51,7 @@ function initDatabase() {
   }
 
   dbReady = (async () => {
-    const SQL = await initSqlJs();
+    const SQL = await initSqlJs(getSqlJsConfig());
 
     // Try loading existing database file
     let loaded = false;
