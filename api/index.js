@@ -13,11 +13,19 @@ try {
 
   // ── Middleware ──
   try { app.use(require('cors')()); } catch (e) { bootErrors.push('cors: ' + e.message); }
-  try { const bp = require('body-parser'); app.use(bp.json()); app.use(bp.urlencoded({ extended: true })); } catch (e) { bootErrors.push('body-parser: ' + e.message); }
+  try { const bp = require('body-parser'); app.use(bp.json({ limit: '10mb' })); app.use(bp.urlencoded({ extended: true, limit: '10mb' })); } catch (e) { bootErrors.push('body-parser: ' + e.message); }
   try {
     const session = require('express-session');
     app.use(session({ secret: process.env.SESSION_SECRET || 'your-secret-key', resave: false, saveUninitialized: true, cookie: { secure: false } }));
   } catch (e) { bootErrors.push('express-session: ' + e.message); }
+
+  // Serve uploaded files from /tmp on Vercel
+  try {
+    const path = require('path');
+    if (process.env.VERCEL) {
+      app.use('/uploads', require('express').static('/tmp/uploads'));
+    }
+  } catch (e) { bootErrors.push('static-uploads: ' + e.message); }
 
   // ── Routes ──
   try { app.use('/api/contact', require('../routes/contact')); } catch (e) { bootErrors.push('routes/contact: ' + e.message); }

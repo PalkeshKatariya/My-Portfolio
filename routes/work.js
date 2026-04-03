@@ -6,11 +6,19 @@ const path = require('path');
 const fs = require('fs');
 const { requireAdmin } = require('./authMiddleware');
 
-// Ensure upload directories exist
-const UPLOAD_DIR = path.join(__dirname, '..', 'public', 'uploads');
+// On Vercel the filesystem is read-only except /tmp
+const IS_VERCEL = !!process.env.VERCEL;
+const UPLOAD_DIR = IS_VERCEL
+  ? '/tmp/uploads'
+  : path.join(__dirname, '..', 'public', 'uploads');
 const VIDEO_DIR = path.join(UPLOAD_DIR, 'videos');
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-fs.mkdirSync(VIDEO_DIR, { recursive: true });
+
+try {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  fs.mkdirSync(VIDEO_DIR, { recursive: true });
+} catch (e) {
+  console.error('Could not create upload dirs:', e.message);
+}
 
 // Disk storage for thumbnails
 const thumbStorage = multer.diskStorage({
