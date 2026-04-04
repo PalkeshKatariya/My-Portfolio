@@ -608,6 +608,33 @@
     }
 
     /* ── RESPONSIVE ── */
+
+    /* Hamburger toggle for sidebar */
+    .sidebar-toggle {
+      display: none;
+      background: rgba(45,139,255,.08);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: color .25s, border-color .25s;
+      flex-shrink: 0;
+    }
+    .sidebar-toggle:hover { color: var(--cyan); border-color: var(--cyan); }
+    .sidebar-toggle svg { width: 16px; height: 16px; }
+
+    /* Sidebar overlay for mobile */
+    .sidebar-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(2,11,24,.7);
+      z-index: 99;
+      backdrop-filter: blur(4px);
+    }
+    .sidebar-overlay.open { display: block; }
+
     @media (max-width: 900px) {
       .sidebar { width: 220px; }
       .main { margin-left: 220px; }
@@ -615,13 +642,103 @@
       .content { padding: 24px; }
       .topbar { padding: 14px 24px; }
     }
+
     @media (max-width: 680px) {
-      .sidebar { transform: translateX(-100%); transition: transform .3s; }
-      .sidebar.open { transform: translateX(0); }
+      /* Sidebar becomes an overlay drawer */
+      .sidebar {
+        width: 270px;
+        transform: translateX(-100%);
+        transition: transform .3s cubic-bezier(.4,0,.2,1);
+        box-shadow: none;
+      }
+      .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 30px rgba(0,0,0,.4);
+      }
       .main { margin-left: 0; }
-      .stats-row { grid-template-columns: 1fr 1fr; }
-      .form-grid { grid-template-columns: 1fr; }
-      .edit-inline { grid-template-columns: 1fr; }
+
+      /* Show hamburger toggle */
+      .sidebar-toggle { display: flex; }
+
+      /* Topbar */
+      .topbar { padding: 12px 16px; gap: 10px; }
+      .topbar-title { font-size: 1.2rem; }
+      .topbar-breadcrumb { font-size: .5rem; }
+
+      /* Content */
+      .content { padding: 16px; }
+
+      /* Stats */
+      .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+      .stat-card { padding: 16px 14px; }
+      .stat-value { font-size: 2rem; }
+      .stat-label { font-size: .5rem; letter-spacing: .15em; }
+      .stat-sub { font-size: .68rem; }
+      .stat-icon { font-size: 1.6rem; top: 12px; right: 12px; }
+
+      /* Forms */
+      .form-grid { grid-template-columns: 1fr; gap: 14px; }
+      .form-card { padding: 20px 16px; }
+      .form-footer { flex-direction: column; gap: 8px; }
+      .form-footer .btn { width: 100%; justify-content: center; }
+      .form-input, .form-select, .form-textarea { font-size: 16px; padding: 12px 12px; }
+
+      /* Section headers */
+      .section-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .section-heading { font-size: 1.4rem; }
+
+      /* Table */
+      .table-toolbar { flex-direction: column; gap: 8px; padding: 14px 16px; }
+      .table-search { width: 100%; }
+      table { font-size: .8rem; }
+      th { padding: 10px 12px; font-size: .48rem; letter-spacing: .15em; }
+      td { padding: 12px; font-size: .82rem; }
+
+      /* Buttons in table */
+      .btn { font-size: .58rem; padding: 7px 12px; }
+
+      /* Edit inline */
+      .edit-inline { grid-template-columns: 1fr; gap: 10px; }
+
+      /* Inquiry cards */
+      .inquiry-card {
+        grid-template-columns: 1fr;
+        gap: 10px; padding: 16px;
+      }
+      .inq-avatar { display: none; }
+      .inq-meta {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .inq-name { font-size: .9rem; }
+      .inq-body { font-size: .82rem; }
+
+      /* Login */
+      .login-box { padding: 32px 24px; margin: 0 16px; }
+      .login-logo { font-size: 1.6rem; }
+      .login-input { font-size: 16px; }
+      .login-orb-1 { width: 250px; height: 250px; }
+      .login-orb-2 { width: 180px; height: 180px; }
+
+      /* Modal */
+      .modal-box { width: 90vw; padding: 24px 20px; }
+
+      /* Toast */
+      #toast-container { bottom: 16px; right: 16px; left: 16px; }
+      .toast { min-width: auto; font-size: .58rem; }
+
+      /* Cursor off on mobile */
+      body { cursor: auto; }
+      #cursor, #cursor-ring { display: none !important; }
+    }
+
+    @media (max-width: 400px) {
+      .stats-row { grid-template-columns: 1fr; }
+      .stat-card { padding: 14px 12px; }
+      .topbar-title { font-size: 1rem; }
+      .section-heading { font-size: 1.2rem; }
+      .sidebar { width: 85vw; }
     }
   </style>
 </head>
@@ -633,6 +750,9 @@
 
 <!-- TOAST -->
 <div id="toast-container"></div>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <!-- CONFIRM MODAL -->
 <div class="modal-overlay" id="confirmModal">
@@ -721,9 +841,14 @@
     <div class="main">
       <!-- TOPBAR -->
       <div class="topbar">
-        <div class="topbar-left">
-          <div class="topbar-title" id="topbarTitle">Dashboard</div>
-          <div class="topbar-breadcrumb">PALKESH.KATARIYA <span>/</span> <span id="topbarBreadcrumb">Overview</span></div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="topbar-left">
+            <div class="topbar-title" id="topbarTitle">Dashboard</div>
+            <div class="topbar-breadcrumb">PALKESH.KATARIYA <span>/</span> <span id="topbarBreadcrumb">Overview</span></div>
+          </div>
         </div>
         <div class="topbar-right">
           <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
@@ -1479,6 +1604,27 @@
   function escHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+
+  // ── SIDEBAR TOGGLE (MOBILE) ──
+  (function() {
+    const toggle = document.getElementById('sidebarToggle');
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('open'); }
+    function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+
+    toggle.addEventListener('click', function() {
+      sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+    });
+    overlay.addEventListener('click', closeSidebar);
+
+    document.querySelectorAll('.nav-item').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (window.innerWidth <= 680) closeSidebar();
+      });
+    });
+  })();
 </script>
 </body>
 </html>
