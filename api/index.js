@@ -1,3 +1,4 @@
+require('dotenv').config();
 // Wrap EVERYTHING in a try-catch so Vercel never gets an uncaught module error
 let app;
 try {
@@ -19,13 +20,7 @@ try {
     app.use(session({ secret: process.env.SESSION_SECRET || 'your-secret-key', resave: false, saveUninitialized: true, cookie: { secure: false } }));
   } catch (e) { bootErrors.push('express-session: ' + e.message); }
 
-  // Serve uploaded files from /tmp on Vercel
-  try {
-    const path = require('path');
-    if (process.env.VERCEL) {
-      app.use('/uploads', require('express').static('/tmp/uploads'));
-    }
-  } catch (e) { bootErrors.push('static-uploads: ' + e.message); }
+  // Serve uploaded files (now handled by Supabase Storage, no local static needed)
 
   // ── Routes ──
   try { app.use('/api/contact', require('../routes/contact')); } catch (e) { bootErrors.push('routes/contact: ' + e.message); }
