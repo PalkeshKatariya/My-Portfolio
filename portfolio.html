@@ -960,29 +960,153 @@
       .about-grid { grid-template-columns: 1fr; gap: 40px; }
       .about-frame { aspect-ratio: 16/7; }
     }
+
     @media (max-width: 768px) {
       .nav-links { display: none; }
       .hamburger { display: flex; }
-      section { padding: 70px 5vw; }
+      section { padding: 60px 5vw; }
       body { cursor: auto; }
       #cursor, #cursor-ring { display: none !important; }
+
+      /* Hero */
+      #hero { min-height: 100svh; padding: 0 5vw 6vh; }
       .hero-image-right {
-        height: clamp(200px, 50vh, 360px);
+        height: clamp(180px, 40vh, 300px);
         width: auto;
         right: 1vw;
         bottom: 4vh;
-        opacity: .35;
+        opacity: .2;
       }
-      .work-carousel-outer { padding: 0 40px; }
-      .carousel-btn { width: 36px; height: 36px; }
-      .services-grid { grid-template-columns: 1fr; }
+      .hero-title {
+        font-size: clamp(2.8rem, 10vw, 5rem);
+      }
+      .hero-sub { font-size: .88rem; max-width: 100%; }
+      .hero-eyebrow { font-size: .65rem; letter-spacing: .2em; }
+      .hero-scroll { display: none; }
+      .hero-actions { gap: 1rem; flex-wrap: wrap; }
+      .btn-primary { padding: 12px 24px; font-size: .72rem; }
+      .btn-ghost { font-size: .72rem; }
+
+      /* Orbs smaller on mobile */
+      .orb-1 { width: 280px; height: 280px; }
+      .orb-2 { width: 200px; height: 200px; }
+      .orb-3 { width: 150px; height: 150px; }
+
+      /* Marquee */
+      .marquee-strip { padding: 14px 0; }
+      .marquee-inner span { font-size: 1rem; margin: 0 1.2rem; }
+
+      /* Section titles */
+      .section-title { font-size: clamp(2rem, 7vw, 3rem); }
+      .section-label { font-size: .6rem; letter-spacing: .2em; }
+
+      /* Work carousel */
+      .work-carousel-outer { padding: 0; }
+      .carousel-btn { display: none; }
+      .work-grid { overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; scrollbar-width: none; }
+      .work-grid::-webkit-scrollbar { display: none; }
+      .work-carousel-track { gap: 12px; padding: 0 2px; }
+      .work-card { min-width: 80vw; scroll-snap-align: start; }
+      .work-info { padding: 12px 14px 14px; }
+      .work-name { font-size: 1.1rem; }
+      .filter-bar { gap: .4rem; margin: 2rem 0 1.5rem; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 4px; }
+      .filter-bar::-webkit-scrollbar { display: none; }
+      .filter-btn { padding: 6px 14px; font-size: .62rem; white-space: nowrap; flex-shrink: 0; }
+
+      /* About */
+      .about-grid { grid-template-columns: 1fr; gap: 2rem; }
+      .about-frame { aspect-ratio: 4/3; }
+      .about-name-tag { font-size: 1.6rem; }
+      .about-text h3 { font-size: 1.4rem; }
+      .about-text p { font-size: .88rem; }
+      .skills-grid { grid-template-columns: 1fr; gap: .5rem; margin-top: 1.2rem; }
+
+      /* Services */
+      .services-grid { grid-template-columns: 1fr; gap: 1px; margin-top: 2rem; }
+      .service-card { padding: 28px 22px; }
+      .service-title { font-size: 1.3rem; }
+      .service-desc { font-size: .82rem; }
+      .service-num { font-size: 2.5rem; top: 20px; right: 20px; }
+
+      /* Contact */
+      .contact-inner { grid-template-columns: 1fr; gap: 2.5rem; }
       .form-row { grid-template-columns: 1fr; }
-      .socials-row { gap: 1.8rem; }
-      .footer { flex-direction: column; text-align: center; }
+      .form-group input, .form-group select, .form-group textarea { font-size: 16px; padding: 12px 14px; }
+      .btn-submit { width: 100%; text-align: center; padding: 14px 20px; }
+      #contact .bg-text { font-size: clamp(4rem, 15vw, 8rem); }
+
+      /* Socials */
+      .socials-section { padding: 50px 5vw; }
+      .socials-row { gap: 1.5rem; }
+      .social-icon { width: 52px; height: 52px; font-size: 1.2rem; }
+      .social-icon svg { width: 20px; height: 20px; }
+      .social-name { font-size: .56rem; }
+
+      /* Footer */
+      footer { flex-direction: column; text-align: center; gap: .8rem; padding: 30px 5vw; }
+      .footer-logo { font-size: 1.2rem; }
+      .footer-copy { font-size: .55rem; }
+
+      /* Modal */
+      .modal-box { width: 95vw; padding: 16px; }
+      .modal-close { top: -36px; font-size: .58rem; }
+      .modal-title { font-size: 1.3rem; }
+      .modal-info { flex-direction: column; gap: .5rem; }
+
+      /* Mobile nav */
+      .mobile-nav a { font-size: 2.2rem; }
     }
+
     @media (max-width: 480px) {
-      .hero-actions { flex-direction: column; align-items: flex-start; }
-      .filter-bar { gap: .4rem; }
+      #hero { padding: 0 4vw 5vh; }
+      .hero-title { font-size: clamp(2.4rem, 12vw, 3.5rem); }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn-primary { text-align: center; }
+      .btn-ghost { justify-content: center; }
+      .hero-sub { font-size: .82rem; line-height: 1.6; }
+
+      .filter-bar { gap: .3rem; }
+      .filter-btn { padding: 5px 10px; font-size: .58rem; }
+
+      .work-card { min-width: 88vw; }
+      .work-thumb { aspect-ratio: 16/10; }
+
+      .about-frame { aspect-ratio: 1/1; }
+      .about-deco-num { font-size: 4rem; }
+      .about-frame-inner { padding: 16px; }
+      .about-name-tag { font-size: 1.3rem; }
+      .about-role-tag { font-size: .55rem; }
+
+      .service-card { padding: 22px 18px; }
+      .service-icon { width: 42px; height: 42px; margin-bottom: 1.2rem; font-size: 1.1rem; }
+
+      .contact-detail { gap: .7rem; }
+      .detail-icon { width: 36px; height: 36px; }
+      .detail-info p:last-child { font-size: .82rem; }
+
+      .socials-row { gap: 1rem; }
+      .social-icon { width: 44px; height: 44px; }
+      .social-icon svg { width: 18px; height: 18px; }
+
+      nav { padding: 16px 4vw; }
+      .logo { font-size: clamp(1.1rem, 4vw, 1.5rem); }
+      .admin-link { padding: 6px 10px; font-size: .65rem; }
+
+      /* Video controls on mobile */
+      .cp-controls { padding: 12px 10px 8px; gap: 8px; }
+      .cp-time { font-size: .5rem; min-width: 56px; }
+      .cp-vol-wrap { display: none; }
+      .cp-btn svg { width: 16px; height: 16px; }
+    }
+
+    /* Small phones */
+    @media (max-width: 360px) {
+      .hero-title { font-size: 2.2rem; }
+      .hero-sub { font-size: .78rem; }
+      .section-title { font-size: 1.8rem; }
+      .work-card { min-width: 92vw; }
+      .about-frame { aspect-ratio: 3/4; }
+      .mobile-nav a { font-size: 1.8rem; }
     }
 
     @media (hover: none), (pointer: coarse) {
