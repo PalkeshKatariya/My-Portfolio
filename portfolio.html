@@ -48,6 +48,9 @@
     [data-theme="light"] nav.scrolled { background: rgba(240,245,251,.75); backdrop-filter: blur(18px); }
     [data-theme="light"] .hero-bg { background: var(--navy); }
     [data-theme="light"] .hero-bg::before {
+      opacity: 0.3;
+    }
+    [data-theme="light"] .hero-bg::after {
       background:
         radial-gradient(ellipse 70% 50% at 25% 60%, rgba(180,210,240,.5) 0%, transparent 70%),
         radial-gradient(ellipse 60% 45% at 75% 35%, rgba(160,200,235,.4) 0%, transparent 65%),
@@ -214,11 +217,21 @@
     .hero-bg::before {
       content: '';
       position: absolute;
+      inset: -50%;
+      width: 200%; height: 200%;
+      background: url('download.jpeg') center/cover no-repeat;
+      transform: rotate(90deg);
+      opacity: 0.65;
+    }
+    .hero-bg::after {
+      content: '';
+      position: absolute;
       inset: 0;
       background:
         radial-gradient(ellipse 70% 50% at 25% 60%, rgba(13,58,122,.6) 0%, transparent 70%),
         radial-gradient(ellipse 60% 45% at 75% 35%, rgba(26,80,136,.45) 0%, transparent 65%),
         radial-gradient(ellipse 50% 40% at 50% 80%, rgba(0,170,255,.08) 0%, transparent 60%);
+      z-index: 1;
     }
     
     .hero-bg-video {
