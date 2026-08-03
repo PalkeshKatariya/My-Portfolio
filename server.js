@@ -4,10 +4,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const path = require('path');
-const db = require('./database');
-const contactRoutes = require('./routes/contact');
-const workRoutes = require('./routes/work');
-const authRoutes = require('./routes/auth');
+const apiApp = require('./api');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,23 +14,32 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(session({
-  secret: 'your-secret-key', // Change this to a secure key
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false } // Set to true if using HTTPS
+  cookie: { secure: false }
 }));
+
+// Attach the API app so /api/* works the same way locally and in Vercel
+app.use(apiApp);
 
 // Serve static files (for admin panel)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Routes
-app.use('/api/contact', contactRoutes);
-app.use('/api/work', workRoutes);
-app.use('/api/auth', authRoutes);
-
 // Serve the main portfolio page
+const homepage = path.join(__dirname, 'Index.html');
+const fallbackHomepage = path.join(__dirname, 'portfolio.html');
+
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'portfolio.html'));
+  res.sendFile(homepage);
+});
+
+app.get('/Index.html', (req, res) => {
+  res.sendFile(homepage);
+});
+
+app.get('/portfolio.html', (req, res) => {
+  res.sendFile(fallbackHomepage);
 });
 
 // Serve admin page specifically

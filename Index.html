@@ -1540,12 +1540,17 @@
           serviceType
         })
       });
+
+      let result = {};
+      try {
+        result = await response.json();
+      } catch (_) {}
       
       if (response.ok) {
-        showFormMessage('Thank you! Your message has been sent successfully.', 'success');
+        showFormMessage(result.message || 'Thank you! Your message has been sent successfully.', 'success');
         form.reset();
       } else {
-        showFormMessage('Failed to send message. Please try again.', 'error');
+        showFormMessage(result.error || 'Failed to send message. Please try again.', 'error');
       }
     } catch (error) {
       console.error('Form submission error:', error);
