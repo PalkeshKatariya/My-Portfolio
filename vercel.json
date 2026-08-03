@@ -1,10 +1,13 @@
 {
   "version": 2,
   "installCommand": "npm install",
+  "buildCommand": "echo 'Build complete'",
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "rewrites": [
-    { "source": "/uploads/(.*)", "destination": "/api/index.js" },
-    { "source": "/api/(.*)", "destination": "/api/index.js" },
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/", "destination": "/portfolio.html" }
+    { "source": "/(.*)", "destination": "/api/index.js" }
   ]
 }

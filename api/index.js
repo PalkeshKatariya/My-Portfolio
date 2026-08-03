@@ -3,6 +3,7 @@ require('dotenv').config();
 let app;
 try {
   const express = require('express');
+  const path = require('path');
   app = express();
 
   const bootErrors = [];
@@ -20,12 +21,38 @@ try {
     app.use(session({ secret: process.env.SESSION_SECRET || 'your-secret-key', resave: false, saveUninitialized: true, cookie: { secure: false } }));
   } catch (e) { bootErrors.push('express-session: ' + e.message); }
 
-  // Serve uploaded files (now handled by Supabase Storage, no local static needed)
+  // ── Serve static files (for public assets, admin panel, etc) ──
+  app.use(express.static(path.join(__dirname, '..', 'public')));
 
   // ── Routes ──
   try { app.use('/api/contact', require('../routes/contact')); } catch (e) { bootErrors.push('routes/contact: ' + e.message); }
   try { app.use('/api/work', require('../routes/work')); } catch (e) { bootErrors.push('routes/work: ' + e.message); }
   try { app.use('/api/auth', require('../routes/auth')); } catch (e) { bootErrors.push('routes/auth: ' + e.message); }
+
+  // ── Serve HTML pages for root routes (important for Vercel) ──
+  const indexPath = path.join(__dirname, '..', 'Index.html');
+  const portfolioPath = path.join(__dirname, '..', 'portfolio.html');
+  const adminPath = path.join(__dirname, '..', 'public', 'admin.html');
+
+  app.get('/', (_req, res) => {
+    res.sendFile(indexPath);
+  });
+
+  app.get('/Index.html', (_req, res) => {
+    res.sendFile(indexPath);
+  });
+
+  app.get('/portfolio.html', (_req, res) => {
+    res.sendFile(portfolioPath);
+  });
+
+  app.get('/admin', (_req, res) => {
+    res.sendFile(adminPath);
+  });
+
+  app.get('/admin.html', (_req, res) => {
+    res.sendFile(adminPath);
+  });
 
   // ── Global error handler ──
   app.use((err, _req, res, _next) => {
