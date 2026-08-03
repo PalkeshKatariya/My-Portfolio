@@ -1,12 +1,6 @@
 {
   "version": 2,
-  "installCommand": "npm install",
-  "buildCommand": "echo 'Build complete'",
-  "functions": {
-    "api/index.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
+  "buildCommand": "npm install",
   "rewrites": [
     { "source": "/(.*)", "destination": "/api/index.js" }
   ]
