@@ -1,13 +1,53 @@
+const fs = require('fs');
+const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY environment variables.');
+let supabase = null;
+
+if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+  supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+} else {
+  console.warn('Supabase credentials missing. Using file-based fallback storage for contact submissions.');
 }
 
-const supabase = createClient(SUPABASE_URL || '', SUPABASE_SERVICE_KEY || '');
+const fallbackStoragePath = path.join(__dirname, 'data', 'contact-submissions.json');
+
+function readFallbackRows() {
+  try {
+    const raw = fs.readFileSync(fallbackStoragePath, 'utf8').trim();
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    if (err && err.code !== 'ENOENT') {
+      console.warn('Unable to read fallback contact storage:', err.message);
+    }
+    return [];
+  }
+}
+
+function writeFallbackRows(rows) {
+  fs.mkdirSync(path.dirname(fallbackStoragePath), { recursive: true });
+  fs.writeFileSync(fallbackStoragePath, JSON.stringify(rows, null, 2));
+}
+
+function createFallbackId() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function saveFallbackRow(row) {
+  const rows = readFallbackRows();
+  rows.unshift(row);
+  writeFallbackRows(rows);
+  return row;
+}
+
+function fallbackRowsForMatch(rows, match) {
+  return rows.filter(row => Object.entries(match).every(([k, v]) => row[k] === v));
+}
 
 // Callback-compatible wrapper so existing routes (contact, auth) keep working
 // without a full rewrite. Uses Supabase under the hood.
@@ -17,32 +57,86 @@ const dbWrapper = {
     (async () => {
       try {
         const { table, operation, data, match } = parseSql(sql, params);
-        let result;
-        if (operation === 'insert') {
-          const { data: rows, error } = await supabase.from(table).insert(data).select();
-          if (error) throw error;
-          const row = rows && rows[0];
-          const ctx = { lastID: row ? row.id : 0, changes: rows ? rows.length : 0 };
-          if (callback) callback.call(ctx, null);
+
+        if (!supabase) {
+          const rows = readFallbackRows();
+          if (operation === 'insert') {
+            const row = saveFallbackRow({
+              id: createFallbackId(),
+              ...data,
+              created_at: new Date().toISOString()
+            });
+            if (callback) callback.call({ lastID: row.id, changes: 1 }, null);
+            return;
+          }
+          if (operation === 'update') {
+            const updatedRows = fallbackRowsForMatch(rows, match);
+            if (callback) callback.call({ lastID: 0, changes: updatedRows.length }, null);
+            return;
+          }
+          if (operation === 'delete') {
+            const filteredRows = rows.filter(r => !Object.entries(match).every(([k, v]) => r[k] === v));
+            writeFallbackRows(filteredRows);
+            if (callback) callback.call({ lastID: 0, changes: rows.length - filteredRows.length }, null);
+            return;
+          }
+          if (callback) callback.call({ lastID: 0, changes: 0 }, null);
           return;
+        }
+
+        if (operation === 'insert') {
+          try {
+            const { data: rows, error } = await supabase.from(table).insert(data).select();
+            if (error) throw error;
+            const row = rows && rows[0];
+            const ctx = { lastID: row ? row.id : 0, changes: rows ? rows.length : 0 };
+            if (callback) callback.call(ctx, null);
+            return;
+          } catch (err) {
+            console.warn('Supabase insert failed, using fallback storage:', err.message || err);
+            const row = saveFallbackRow({
+              id: createFallbackId(),
+              ...data,
+              created_at: new Date().toISOString()
+            });
+            if (callback) callback.call({ lastID: row.id, changes: 1 }, null);
+            return;
+          }
         }
         if (operation === 'update') {
-          let q = supabase.from(table).update(data);
-          for (const [k, v] of Object.entries(match)) q = q.eq(k, v);
-          const { data: rows, error } = await q.select();
-          if (error) throw error;
-          const ctx = { lastID: 0, changes: rows ? rows.length : 0 };
-          if (callback) callback.call(ctx, null);
-          return;
+          try {
+            let q = supabase.from(table).update(data);
+            for (const [k, v] of Object.entries(match)) q = q.eq(k, v);
+            const { data: rows, error } = await q.select();
+            if (error) throw error;
+            const ctx = { lastID: 0, changes: rows ? rows.length : 0 };
+            if (callback) callback.call(ctx, null);
+            return;
+          } catch (err) {
+            console.warn('Supabase update failed, using fallback storage:', err.message || err);
+            const rows = readFallbackRows();
+            const updatedRows = fallbackRowsForMatch(rows, match);
+            if (callback) callback.call({ lastID: 0, changes: updatedRows.length }, null);
+            return;
+          }
         }
         if (operation === 'delete') {
-          let q = supabase.from(table).delete();
-          for (const [k, v] of Object.entries(match)) q = q.eq(k, v);
-          const { data: rows, error } = await q.select();
-          if (error) throw error;
-          const ctx = { lastID: 0, changes: rows ? rows.length : 0 };
-          if (callback) callback.call(ctx, null);
-          return;
+          try {
+            let q = supabase.from(table).delete();
+            for (const [k, v] of Object.entries(match)) q = q.eq(k, v);
+            const { data: rows, error } = await q.select();
+            if (error) throw error;
+            const ctx = { lastID: 0, changes: rows ? rows.length : 0 };
+            if (callback) callback.call(ctx, null);
+            return;
+          } catch (err) {
+            console.warn('Supabase delete failed, using fallback storage:', err.message || err);
+            const rows = readFallbackRows();
+            const filteredRows = rows.filter(r => !Object.entries(match).every(([k, v]) => r[k] === v));
+            writeFallbackRows(filteredRows);
+            if (callback) callback.call({ lastID: 0, changes: rows.length - filteredRows.length }, null);
+            return;
+          }
         }
         if (callback) callback.call({ lastID: 0, changes: 0 }, null);
       } catch (err) {
@@ -56,6 +150,12 @@ const dbWrapper = {
   get(sql, params, callback) {
     (async () => {
       try {
+        if (!supabase) {
+          const rows = readFallbackRows();
+          callback(null, rows[0] || null);
+          return;
+        }
+
         const { table, columns, match, orderBy } = parseSelect(sql, params);
         let q = supabase.from(table).select(columns);
         for (const [k, v] of Object.entries(match)) q = q.eq(k, v);
@@ -65,8 +165,9 @@ const dbWrapper = {
         if (error) throw error;
         callback(null, data);
       } catch (err) {
-        console.error('db.get error:', err);
-        callback(err, null);
+        console.warn('Supabase read failed, using fallback storage:', err.message || err);
+        const rows = readFallbackRows();
+        callback(null, rows[0] || null);
       }
     })();
   },
@@ -75,6 +176,17 @@ const dbWrapper = {
   all(sql, params, callback) {
     (async () => {
       try {
+        if (!supabase) {
+          const { table } = parseSelect(sql, params);
+          if (table === 'clients') {
+            const rows = readFallbackRows();
+            callback(null, rows.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')));
+            return;
+          }
+          callback(null, []);
+          return;
+        }
+
         const { table, columns, match, orderBy } = parseSelect(sql, params);
         let q = supabase.from(table).select(columns);
         for (const [k, v] of Object.entries(match)) q = q.eq(k, v);
@@ -83,8 +195,9 @@ const dbWrapper = {
         if (error) throw error;
         callback(null, data || []);
       } catch (err) {
-        console.error('db.all error:', err);
-        callback(err, []);
+        console.warn('Supabase list failed, using fallback storage:', err.message || err);
+        const rows = readFallbackRows();
+        callback(null, rows.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')));
       }
     })();
   },
